@@ -11,15 +11,15 @@
     "check-types": "next typegen && tsc --noEmit"
   },
   "dependencies": {
-    "@repo/ui": "0.0.0",
-    "@lotexiu/typescript": "1.0.0",
+    "@repo/ui": "workspace:*",
+    "@lotexiu/typescript": "workspace:*",
     "next": "16.0.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
-    "@lotexiu/eslint-config": "1.0.0",
-    "@lotexiu/typescript-config": "1.0.0",
+    "@lotexiu/eslint-config": "workspace:*",
+    "@lotexiu/typescript-config": "workspace:*",
     "@types/node": "^22.15.3",
     "@types/react": "19.2.2",
     "@types/react-dom": "19.2.2",
