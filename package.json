@@ -8,8 +8,8 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
     "new": "turbo gen workspace",
-    "mismatches": "dlx syncpack list-mismatches",
-    "fix-mismatches": "dlx syncpack fix-mismatches",
+    "mismatch": "pnpm dlx syncpack list-mismatches",
+    "fix-mismatch": "pnpm dlx syncpack fix-mismatches",
     "update-pkgs": "up jest --latest --recursive"
   },
   "devDependencies": {
@@ -21,7 +21,7 @@
     "ora": "^9.0.0",
     "prettier": "^3.6.2",
     "turbo": "^2.6.0",
-    "typescript": "5.9.2",
+    "typescript": "^5.9.2",
     "vite": "^7.2.2",
     "vite-plugin-dts": "^4.5.4"
   },
