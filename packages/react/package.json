@@ -20,7 +20,7 @@
     "./theme/implementations": {
       "import": {
         "types": "./dist/theme/implementations.d.ts",
-        "default": "./dist/theme/implementations.js"
+        "default": "./dist/theme/implementations.mjs"
       },
       "require": {
         "types": "./dist/theme/implementations.d.ts",
@@ -30,7 +30,7 @@
     "./components/implementations": {
       "import": {
         "types": "./dist/components/implementations.d.ts",
-        "default": "./dist/components/implementations.js"
+        "default": "./dist/components/implementations.mjs"
       },
       "require": {
         "types": "./dist/components/implementations.d.ts",
@@ -40,7 +40,7 @@
     "./components/ReactComponent/ReactBaseComponent": {
       "import": {
         "types": "./dist/components/ReactComponent/ReactBaseComponent.d.ts",
-        "default": "./dist/components/ReactComponent/ReactBaseComponent.js"
+        "default": "./dist/components/ReactComponent/ReactBaseComponent.mjs"
       },
       "require": {
         "types": "./dist/components/ReactComponent/ReactBaseComponent.d.ts",
@@ -50,7 +50,7 @@
     "./components/ReactComponent/ReactClientComponent": {
       "import": {
         "types": "./dist/components/ReactComponent/ReactClientComponent.d.ts",
-        "default": "./dist/components/ReactComponent/ReactClientComponent.js"
+        "default": "./dist/components/ReactComponent/ReactClientComponent.mjs"
       },
       "require": {
         "types": "./dist/components/ReactComponent/ReactClientComponent.d.ts",
@@ -60,7 +60,7 @@
     "./components/ReactComponent/ReactServerComponent": {
       "import": {
         "types": "./dist/components/ReactComponent/ReactServerComponent.d.ts",
-        "default": "./dist/components/ReactComponent/ReactServerComponent.js"
+        "default": "./dist/components/ReactComponent/ReactServerComponent.mjs"
       },
       "require": {
         "types": "./dist/components/ReactComponent/ReactServerComponent.d.ts",
@@ -70,7 +70,7 @@
     "./components/ReactComponent/types": {
       "import": {
         "types": "./dist/components/ReactComponent/types.d.ts",
-        "default": "./dist/components/ReactComponent/types.js"
+        "default": "./dist/components/ReactComponent/types.mjs"
       },
       "require": {
         "types": "./dist/components/ReactComponent/types.d.ts",
