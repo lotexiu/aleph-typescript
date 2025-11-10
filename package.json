@@ -15,8 +15,8 @@
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^22.15.3",
+    "@vitejs/plugin-react": "^5.1.0",
     "chalk": "^5.6.2",
-    "colorjs.io": "^0.5.2",
     "fs-extra": "^11.3.2",
     "ora": "^9.0.0",
     "prettier": "^3.6.2",
