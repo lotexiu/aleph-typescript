@@ -123,6 +123,36 @@ yarn exec turbo link
 pnpm exec turbo link
 ```
 
+### Managing Dependencies
+
+To quickly install dependencies in multiple packages, you can use your package manager:
+
+```sh
+pnpm add jest --save-dev --recursive --filter=web --filter=@repo/ui --filter=docs
+```
+
+### Using your package manager
+
+You can use your package manager to update dependency versions in one command.
+
+```sh
+pnpm up jest --latest --recursive --filter=web --filter=@repo/ui --filter=docs
+```
+
+### Keeping dependencies on the same version
+
+To keep dependencies on the same version across multiple packages, you can use the following command:
+
+use `list-mismatches` to see which dependencies are out of sync:
+```sh
+pnpm dlx syncpack list-mismatches
+```
+
+then use `fix-mismatches` to align versions:
+```sh
+pnpm dlx syncpack fix-mismatches --filter=mismatched-package
+```
+
 ## Useful Links
 
 Learn more about the power of Turborepo:

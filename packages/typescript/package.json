@@ -1,0 +1,35 @@
+{
+  "name": "@lotexiu/typescript",
+  "version": "0.0.0",
+  "private": "false",
+  "scripts": {
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*"
+  },
+  "dependencies": {
+    "@lotexiu/vite-utils": "workspace:*"
+  },
+  "export": {
+    "dist/global": {},
+    "dist/implementations": {},
+    "dist/types": {},
+    "dist/theme/implementations": {},
+    "dist/theme/types": {},
+    "dist/theme/utils": {},
+    "dist/natives/types": {},
+    "dist/natives/string/generic/implementations": {},
+    "dist/natives/object/proxy/ProxyHandler": {},
+    "dist/natives/object/proxy/types": {},
+    "dist/natives/object/generic/implementations": {},
+    "dist/natives/object/generic/types": {},
+    "dist/natives/function/generic/implementations": {},
+    "dist/natives/function/generic/types": {},
+    "dist/natives/class/generic/types": {},
+    "dist/natives/array/generic/types": {},
+    "dist/global/implementation": {},
+    "dist/global/types": {},
+    "dist/global/utils": {}
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "target": "ESNext",
+    "module": "ESNext",
+    "lib": ["ES2024", "DOM"],
+    "jsx": "react-jsx",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,
+    "declaration": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+		"paths": {
+      "@tsn-array/*": ["./src/typescript/natives/array/*"],
+      "@tsn-class/*": ["./src/typescript/natives/class/*"],
+      "@tsn-console/*": ["./src/typescript/natives/console/*"],
+      "@tsn-date/*": ["./src/typescript/natives/date/*"],
+      "@tsn-function/*": ["./src/typescript/natives/function/*"],
+      "@tsn-json/*": ["./src/typescript/natives/json/*"],
+      "@tsn-math/*": ["./src/typescript/natives/math/*"],
+      "@tsn-number/*": ["./src/typescript/natives/number/*"],
+      "@tsn-object/*": ["./src/typescript/natives/object/*"],
+      "@tsn-regex/*": ["./src/typescript/natives/regex/*"],
+      "@tsn-string/*": ["./src/typescript/natives/string/*"],
+      "@tsn/*": ["./src/typescript/natives/*"],
+      "@tsi/*": ["./src/typescript/interfaces/*"],
+      "@tsu/*": ["./src/typescript/unknown/*"],
+      "@tsrn/*": ["src/react-native/*"],
+      "@tsr/*": ["src/react/*"],
+      "@ts/*": ["./src/typescript/*"]
+		}
+  },
+  "tsc-alias": {
+    
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "@lotexiu/react",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {},
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*"
+  },
+  "dependencies": {
+    "@lotexiu/typescript": "workspace:*",
+    "@lotexiu/vite-utils": "workspace:*",
+    "@types/react": "19.2.2",
+    "react": "^19.2.0"
+  }
+}
