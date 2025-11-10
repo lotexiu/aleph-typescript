@@ -1,0 +1,19 @@
+[submodule "packages/typescript"]
+	path = packages/typescript
+	url = https://github.com/lotexiu/typescript
+
+[submodule "packages/react"]
+	path = packages/react
+	url = https://github.com/lotexiu/react.git
+
+[submodule "packages/eslint-config"]
+	path = packages/eslint-config
+	url = https://github.com/lotexiu/eslint-config.git
+	
+[submodule "packages/typescript-config"]
+	path = packages/typescript-config
+	url = https://github.com/lotexiu/typescript-config.git
+
+[submodule "packages/vite-utils"]
+	path = packages/vite-utils
+	url = https://github.com/lotexiu/vite-utils.git
