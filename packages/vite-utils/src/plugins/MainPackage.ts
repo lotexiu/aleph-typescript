@@ -13,14 +13,29 @@ import { groupFilesByBase, loadRootPackage, ROOT_DIR } from '../utils.ts';
 export function updatePackageJsonPlugin(): PluginOption {
   const pkgPath = path.resolve(ROOT_DIR, 'package.json');
 	let outDir: string;
+  const ignoredFiles: string[] = [];
 
   return {
     name: 'update-package-json-exports',
 		configResolved(conf) { outDir = conf.build.outDir; },
 
+    generateBundle(_options, bundle) {
+      ignoredFiles.length = 0; 
+      for (const fileName in bundle) { 
+        const file = bundle[fileName];
+        if (file.type === 'chunk' && !file.isEntry) {
+            ignoredFiles.push(fileName);
+        }
+        if (fileName.endsWith('.map')) {
+            ignoredFiles.push(fileName);
+        }
+      }
+    },
+
     async closeBundle() {
       const pathOutDir = path.relative(ROOT_DIR, outDir);
-      const files = fs.globSync(`${outDir}/**/*.*`).map(f => path.relative(pathOutDir, f));
+      const allFiles = fs.globSync(`${outDir}/**/*.*`).map(f => path.relative(pathOutDir, f));
+      const files = allFiles.filter(file => !ignoredFiles.includes(file));
       const groupedFiles: Record<string, Record<string, string>> = groupFilesByBase(files);
       const pkg = loadRootPackage();
       const previousExports = pkg.exports || {};
@@ -44,7 +59,8 @@ export function updatePackageJsonPlugin(): PluginOption {
           less: relativePath(variants['less']),
         };
       })
-      if (JSON.stringify(pkg.exports, null, 2) != JSON.stringify(previousExports, null, 2)) {
+      const [newPkg, prevPkg] = [JSON.stringify(pkg.exports, null, 2), JSON.stringify(previousExports, null, 2)]
+      if (newPkg !== prevPkg && [null,undefined,'','{}'].includes(newPkg) === false) {
         fs.writeJSON(pkgPath, pkg, { spaces: 2 });
       }
     },

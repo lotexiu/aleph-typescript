@@ -39,6 +39,7 @@ export default defineConfig({
       output: {
         dir: 'dist',
         format: 'es', 
+        assetFileNames: "[name].[ext]",
       },
     },
   },

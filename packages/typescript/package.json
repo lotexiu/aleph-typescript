@@ -32,14 +32,6 @@
         "default": "./dist/implementations-DJ_eG06L.mjs"
       }
     },
-    "./implementations-Dn4jFkPc": {
-      "import": {
-        "default": "./dist/implementations-Dn4jFkPc.js"
-      },
-      "require": {
-        "default": "./dist/implementations-Dn4jFkPc.js"
-      }
-    },
     "./implementations": {
       "import": {
         "types": "./dist/implementations.d.ts",
