@@ -2,6 +2,8 @@ import Image, { type ImageProps } from "next/image";
 import styles from "./page.module.css";
 import { Button } from "@repo/ui/button";
 
+import {isNull} from '@lotexiu/typescript/implementations';
+
 type Props = Omit<ImageProps, "src"> & {
   srcLight: string;
   srcDark: string;
@@ -19,6 +21,7 @@ const ThemeImage = (props: Props) => {
 };
 
 export default function Home() {
+  console.log("isNull(null): ", isNull(null));
   return (
     <div className={styles.page}>
       <main className={styles.main}>

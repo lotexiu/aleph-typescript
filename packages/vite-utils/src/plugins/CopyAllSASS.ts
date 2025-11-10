@@ -2,7 +2,7 @@ import { PluginOption } from "vite";
 import path from "path";
 import fs from "fs-extra";
 
-export function CopyAllSASSPlugin(srcDir: string): PluginOption {
+export function copyAllSASSPlugin(srcDir: string): PluginOption {
   function getAllScssFiles(dir: string): string[] {
     const files = fs.readdirSync(dir);
     let result: string[] = [];

@@ -43,6 +43,7 @@ _Global.register(Function, {
     return _Object.thisAsParameter(this);
   },
   rebind: function(this: TFunction, context: any, ...args: any[]): TRebindedFunction<TFunction> {
+    const a = 1
     return _Function.rebind(this, context);
   } as any
 })

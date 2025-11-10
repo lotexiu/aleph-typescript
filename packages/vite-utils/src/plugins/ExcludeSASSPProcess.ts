@@ -2,7 +2,7 @@ import { PluginOption } from "vite";
 import path from "path";
 import fs from "fs-extra";
 
-export function ExcludeSASSPProcessPlugin(srcDir: string): PluginOption {
+export function excludeSASSPProcessPlugin(srcDir: string): PluginOption {
   const patterns: RegExp = /\.(scss|sass)$/;
   const files: string[] = [];
 
