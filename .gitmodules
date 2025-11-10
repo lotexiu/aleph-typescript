@@ -1,4 +1,4 @@
-[submodule "apps/typescript"]
+[submodule "packages/typescript"]
 	path = packages/typescript
 	url = https://github.com/lotexiu/typescript
 
