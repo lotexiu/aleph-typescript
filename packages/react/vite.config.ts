@@ -33,7 +33,6 @@ export default defineConfig({
       entry: entries,
     },
     emptyOutDir: false,
-    // ... outras configurações ...
     rollupOptions: {
       external,
       output: {

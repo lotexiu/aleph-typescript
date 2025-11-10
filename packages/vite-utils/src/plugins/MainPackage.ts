@@ -32,8 +32,8 @@ export function updatePackageJsonPlugin(): PluginOption {
         }
         pkg.exports[`./${base}`] = {
           import: {
-            types: relativePath(variants['d.ts'] || variants['d.mts'] || variants['d.cts']),
-            default: relativePath(variants['js'] || variants['mjs'] || variants['cjs'] ||  variants['json'] || variants['wasm'])
+            types: relativePath(variants['d.mts'] || variants['d.cts'] || variants['d.ts']),
+            default: relativePath(variants['mjs'] || variants['cjs'] || variants['js'] || variants['json'] || variants['wasm'])
           },
           require: {
             types: relativePath(variants['d.cts'] || variants['d.ts'] || variants['d.mts']),

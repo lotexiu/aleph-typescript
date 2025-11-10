@@ -1,7 +1,7 @@
-import type { TConstructor } from "@tsn-class/generic/types";
 import type { ReactNode } from "react";
 import type { ReactComponentProxy, WrappedComponent } from "./ReactComponent/types";
 import { ReactClientComponent } from "./ReactComponent/ReactClientComponent";
+import { TConstructor } from "@lotexiu/typescript/natives/class/generic/types";
 
 export function ReactWrapper<T extends TConstructor<any>>(ComponentClass: T): WrappedComponent<T> {
 	// Lambda commands cannot be used as components or screens in Next.js because they affect rendering functionality.
