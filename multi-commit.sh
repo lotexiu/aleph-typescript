@@ -7,15 +7,35 @@
 # -type d -name ".git": Encontra apenas diretórios chamados ".git".
 # sed 's/\/.git//': Remove a parte "/.git" do caminho.
 # sed 's/.\///': Remove o "./" inicial que o find adiciona.
-REPOS_TO_COMMIT=$(find . -type d -name ".git" | sed 's/\/.git//' | sed 's/.\///' | grep -v '^$')
+REPOS_FOUND=$(find . -type d -name ".git" | sed 's/\/.git//' | sed 's/.\///' | grep -v '^$')
+
+# Variável para armazenar o repositório raiz
+ROOT_REPO=""
+# Variável para armazenar os sub-repositórios
+SUB_REPOS=""
+
+# Itera sobre os repositórios encontrados para separar o root dos sub-repositórios
+for repo in $REPOS_FOUND; do
+    if [ "$repo" == "." ]; then
+        ROOT_REPO="$repo"
+    else
+        SUB_REPOS="$SUB_REPOS $repo"
+    fi
+done
+
+# Concatena os repositórios, colocando os sub-repositórios primeiro e o root por último.
+# A ordem será: sub-repo1 sub-repo2 ... .
+REPOS_TO_COMMIT="$SUB_REPOS $ROOT_REPO"
 
 # Verifica se algum repositório foi encontrado
-if [ -z "$REPOS_TO_COMMIT" ]; then
+# Se o SUB_REPOS estiver vazio E o ROOT_REPO estiver vazio, então nenhum foi encontrado.
+if [ -z "$SUB_REPOS" ] && [ -z "$ROOT_REPO" ]; then
     echo "🚨 Erro: Nenhum repositório Git (.git folder) encontrado em subdiretórios."
     exit 1
 fi
 
 echo "=== Repositórios Git Encontrados para Commit: ==="
+echo "Ordem de processamento: Sub-repositórios primeiro, Root por último."
 echo "$REPOS_TO_COMMIT"
 echo "================================================="
 
