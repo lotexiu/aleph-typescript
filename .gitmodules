@@ -1,4 +1,4 @@
-[submodule "packages/typescript"]
+[submodule "apps/typescript"]
 	path = packages/typescript
 	url = https://github.com/lotexiu/typescript
 
@@ -17,3 +17,7 @@
 [submodule "packages/vite-utils"]
 	path = packages/vite-utils
 	url = https://github.com/lotexiu/vite-utils.git
+
+[submodule "apps/docker-management"]
+	path = apps/docker-management
+	url = https://github.com/lotexiu/docker-management.git
