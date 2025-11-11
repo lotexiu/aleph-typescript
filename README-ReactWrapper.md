@@ -35,7 +35,8 @@ Principais membros (implementados/esperados):
 - onInit(): void — hook chamado quando o componente é inicializado.
 - setupHooks(): void — hook executado no contexto do wrapper (onde hooks do React podem ser usados).
 - onChanges(property: Property<this>): void — chamado quando uma propriedade da instância muda (interceptado pelo `proxyHandler`).
-- onPropsChange(properties: Property<this['props']>): void — chamado quando `props` mudam.
+- onComponentPropsChange(newProps: Partial<Props>): void — chamado quando `props` são alterados externamente pelo componente pai ou via binding. Usado para reagir a mudanças vindas de fora.
+- onPropsChange(properties: Property<this['props']>): void — chamado quando há alterações internas em `this.props` ocasionadas pelo render do componente (mudanças internas).
 - abstract render(): ReactNode — deve retornar o JSX do componente.
 
 Importante: o `proxyHandler` faz a mágica de observar alterações de propriedades e chamar `onChanges`/`onPropsChange`. Isso permite que alterações em campos simples da classe (por exemplo `this.serverMessage = 'ok'`) sejam detectadas e tratadas.
@@ -95,12 +96,15 @@ export const SignIn = ReactWrapper(
 
 Observe que `handleSubmit(this.onSubmit)` funciona sem `bind`.
 
-## onChanges e onPropsChange
+## onChanges, onComponentPropsChange e onPropsChange
 
 - `onChanges(property)` é chamado automaticamente quando uma propriedade da instância (qualquer campo) muda — graças ao `proxyHandler` usado em `ReactBaseComponent`.
-- `onPropsChange(properties)` é chamado quando há mudanças em `this.props` (normalmente vindas do wrapper se a árvore React pai fornecer novos props).
+- `onComponentPropsChange(newProps)` é chamado quando há mudanças em `props` vindas externamente (do componente pai ou via binding). Use este método para reagir a alterações externas nos props e sincronizar estado interno se necessário.
+- `onPropsChange(properties)` é chamado quando há alterações internas em `this.props` ocasionadas durante o render do componente (mudanças internas no objeto props).
 
-Dica: se dentro de `onChanges` você faz mutações que devem refletir na UI, chame `this.updateView()` (ou tenha certeza que as alterações ocorreram dentro de valores que já acionam re-render, por exemplo hooks).
+**Diferença chave:** `onComponentPropsChange` = mudanças externas (pai atualizou props); `onPropsChange` = mudanças internas (alterações em `this.props` dentro do componente na função `render`).
+
+Dica: se dentro de `onChanges` ou `onComponentPropsChange` você faz mutações que devem refletir na UI, chame `this.updateView()` (ou tenha certeza que as alterações ocorreram dentro de valores que já acionam re-render, por exemplo hooks).
 
 ## Contrato simples (2–4 bullets)
 
@@ -128,6 +132,7 @@ export const MyComponent = ReactWrapper(
   class MyComponent extends ReactClientComponent {
     form: any;
     serverMessage: string | null = null;
+		lastRender: Date;
 
     setupHooks(): void {
       this.form = useForm({ defaultValues: { a: '' } });
@@ -137,18 +142,24 @@ export const MyComponent = ReactWrapper(
       // reagir a mudanças em campos da classe
     }
 
+    onComponentPropsChange(newProps: Partial<typeof this.props>): void {
+      // reagir a mudanças externas nos props (vindas do pai)
+      // ex: sincronizar estado interno quando props mudam
+    }
+
     onPropsChange(properties: Property<this["props"], keyof this["props"]>): void {
-      // reagir a mudanças em props
+      // reagir a mudanças internas em this.props ocasionadas pelo render
     }
 
     async onSubmit(values: any) {
       this.serverMessage = null;
       // ... await fetch
-      this.serverMessage = 'ok';
+      this.serverMessage = 'ok'; // Não executa onPropsChange pois foi alterado fora do contexto do render.
       this.updateView();
     }
 
     render() {
+			this.lastRender = new Date(); // executa onPropsChange pois foi alterado dentro do render
       return (
         <form onSubmit={this.form.handleSubmit(this.onSubmit)}>
           {/* inputs */}
@@ -173,4 +184,4 @@ Se quiser, eu posso:
 - adicionar exemplos de código mais detalhados ou testes que mostrem o rebind e o `onChanges` sendo disparados.
 - gerar um diagrama simples do fluxo (instanciação -> setupHooks -> render -> updateView).
 
-Quer que eu salve este arquivo também em `docs/REACT_WRAPPER.md` ou mantenha em `packages/react/README-ReactWrapper.md`? 
+Quer que eu salve este arquivo também em `docs/REACT_WRAPPER.md` ou mantenha em `packages/react/README-ReactWrapper.md`?

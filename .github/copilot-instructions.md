@@ -16,21 +16,42 @@ Este é um monorepo Turborepo + pnpm focado em utilitários TypeScript avançado
 
 ```tsx
 export const MyComponent = ReactWrapper(
-  class MyComponent extends ReactClientComponent<Props> {
+  class MyComponent extends ReactClientComponent {
     form: any;
-    
+    serverMessage: string | null = null;
+		lastRender: Date;
+
     setupHooks(): void {
-      // TODOS os hooks do React vão aqui (useForm, useEffect, useState)
-      this.form = useForm({ defaultValues: {...} });
+      this.form = useForm({ defaultValues: { a: '' } });
     }
-    
+
+    onChanges(property: Property<this, keyof this>): void {
+      // reagir a mudanças em campos da classe
+    }
+
+    onComponentPropsChange(newProps: Partial<typeof this.props>): void {
+      // reagir a mudanças externas nos props (vindas do pai)
+      // ex: sincronizar estado interno quando props mudam
+    }
+
+    onPropsChange(properties: Property<this["props"], keyof this["props"]>): void {
+      // reagir a mudanças internas em this.props ocasionadas pelo render
+    }
+
     async onSubmit(values: any) {
-      // Lógica assíncrona
-      this.updateView(); // Chame após mutações para re-renderizar
+      this.serverMessage = null;
+      // ... await fetch
+      this.serverMessage = 'ok'; // Não executa onPropsChange pois foi alterado fora do contexto do render.
+      this.updateView();
     }
-    
+
     render() {
-      return <form onSubmit={this.form.handleSubmit(this.onSubmit)}>...</form>
+			this.lastRender = new Date(); // executa onPropsChange pois foi alterado dentro do render
+      return (
+        <form onSubmit={this.form.handleSubmit(this.onSubmit)}>
+          {/* inputs */}
+        </form>
+      );
     }
   }
 );
@@ -41,6 +62,17 @@ export const MyComponent = ReactWrapper(
 2. Chame `this.updateView()` após mutar campos da classe (ex: `this.serverMessage = 'ok'`)
 3. `this.onSubmit` não precisa de `.bind(this)` - o rebind é automático via ProxyHandler
 4. Use `ReactServerComponent` para componentes server-side (sem hooks de cliente)
+
+### Lifecycle Hooks do ReactBaseComponent
+
+- **`onInit()`**: Executado quando o componente é inicializado
+- **`setupHooks()`**: Onde TODOS os hooks do React devem ser chamados (useForm, useEffect, useState, etc)
+- **`onChanges(property)`**: Disparado quando qualquer campo da instância muda (via ProxyHandler)
+- **`onComponentPropsChange(newProps)`**: Disparado quando props são alterados externamente (pelo componente pai ou via binding) - use para sincronizar estado interno
+- **`onPropsChange(properties)`**: Disparado quando há alterações internas em `this.props` ocasionado pelo render
+- **`render()`**: Retorna o JSX do componente (método abstrato obrigatório)
+
+**Diferença importante:** `onComponentPropsChange` = mudanças externas nos props (vindas do pai); `onPropsChange` = mudanças internas em `this.props`.
 
 Veja `README-ReactWrapper.md` para detalhes completos e `apps/docker-management/src/app/login/client/SignIn.tsx` como exemplo de referência.
 
