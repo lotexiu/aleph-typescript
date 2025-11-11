@@ -12,7 +12,8 @@
     "fix-mismatch": "pnpm dlx syncpack fix-mismatches",
     "update-pkgs": "up jest --latest --recursive",
     "git-init": "git submodule update --init --recursive",
-    "git-sync": "git pull --recurse-submodules"
+    "git-sync": "git pull --recurse-submodules",
+		"clean": "find . -name \"node_modules\" -type d -prune -exec rm -rf '{}' +"
   },
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
@@ -27,7 +28,7 @@
     "vite": "^7.2.2",
     "vite-plugin-dts": "^4.5.4"
   },
-  "packageManager": "pnpm@9.0.0",
+  "packageManager": "pnpm@10.21.0",
   "engines": {
     "node": ">=18"
   }

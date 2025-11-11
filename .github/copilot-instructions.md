@@ -16,7 +16,7 @@ Este é um monorepo Turborepo + pnpm focado em utilitários TypeScript avançado
 
 ```tsx
 export const MyComponent = ReactWrapper(
-  class MyComponent extends ReactClientComponent {
+  class MyComponent extends ReactClientComponent /** Também é possivel realizar `extends ReactWrapper.ClientComponent` */ {
     form: any;
     serverMessage: string | null = null;
 		lastRender: Date;
