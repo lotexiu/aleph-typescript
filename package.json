@@ -10,7 +10,9 @@
     "new": "turbo gen workspace",
     "mismatch": "pnpm dlx syncpack list-mismatches",
     "fix-mismatch": "pnpm dlx syncpack fix-mismatches",
-    "update-pkgs": "up jest --latest --recursive"
+    "update-pkgs": "up jest --latest --recursive",
+    "git-init": "git submodule update --init --recursive",
+    "git-sync": "git pull --recurse-submodules"
   },
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
