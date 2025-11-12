@@ -67,30 +67,30 @@ Exemplo de uso (classe):
 
 ```tsx
 export const SignIn = ReactWrapper(
-  class SignIn extends ReactClientComponent {
-    form: any;
-    serverMessage: string | null = null;
+	class SignIn extends ReactClientComponent {
+		form: any;
+		serverMessage: string | null = null;
 
-    setupHooks(): void {
-      // useForm é seguro aqui
-      this.form = useForm({ defaultValues: { email: '', password: '' } });
-    }
+		setupHooks(): void {
+			// useForm é seguro aqui
+			this.form = useForm({ defaultValues: { email: "", password: "" } });
+		}
 
-    async onSubmit(values: any) {
-      // `this` já aponta para a instância proxy — não é preciso bind
-      this.serverMessage = 'enviando...';
-      // ...chamada ao servidor
-      this.updateView(); // força re-render para mostrar serverMessage
-    }
+		async onSubmit(values: any) {
+			// `this` já aponta para a instância proxy — não é preciso bind
+			this.serverMessage = "enviando...";
+			// ...chamada ao servidor
+			this.updateView(); // força re-render para mostrar serverMessage
+		}
 
-    render() {
-      return (
-        <form onSubmit={this.form.handleSubmit(this.onSubmit)}>
-          {/* controles */}
-        </form>
-      );
-    }
-  }
+		render() {
+			return (
+				<form onSubmit={this.form.handleSubmit(this.onSubmit)}>
+					{/* controles */}
+				</form>
+			);
+		}
+	},
 );
 ```
 
@@ -129,44 +129,46 @@ Dica: se dentro de `onChanges` ou `onComponentPropsChange` você faz mutações 
 
 ```tsx
 export const MyComponent = ReactWrapper(
-  class MyComponent extends ReactClientComponent {
-    form: any;
-    serverMessage: string | null = null;
+	class MyComponent extends ReactClientComponent {
+		form: any;
+		serverMessage: string | null = null;
 		lastRender: Date;
 
-    setupHooks(): void {
-      this.form = useForm({ defaultValues: { a: '' } });
-    }
+		setupHooks(): void {
+			this.form = useForm({ defaultValues: { a: "" } });
+		}
 
-    onChanges(property: Property<this, keyof this>): void {
-      // reagir a mudanças em campos da classe
-    }
+		onChanges(property: Property<this, keyof this>): void {
+			// reagir a mudanças em campos da classe
+		}
 
-    onComponentPropsChange(newProps: Partial<typeof this.props>): void {
-      // reagir a mudanças externas nos props (vindas do pai)
-      // ex: sincronizar estado interno quando props mudam
-    }
+		onComponentPropsChange(newProps: Partial<typeof this.props>): void {
+			// reagir a mudanças externas nos props (vindas do pai)
+			// ex: sincronizar estado interno quando props mudam
+		}
 
-    onPropsChange(properties: Property<this["props"], keyof this["props"]>): void {
-      // reagir a mudanças internas em this.props ocasionadas pelo render
-    }
+		onPropsChange(
+			properties: Property<this["props"], keyof this["props"]>,
+		): void {
+			// reagir a mudanças internas em this.props ocasionadas pelo render
+		}
 
-    async onSubmit(values: any) {
-      this.serverMessage = null;
-      // ... await fetch
-      this.serverMessage = 'ok'; // Não executa onPropsChange pois foi alterado fora do contexto do render.
-      this.updateView();
-    }
+		async onSubmit(values: any) {
+			this.serverMessage = null;
+			// ... await fetch
+			this.serverMessage = "ok"; // Não executa onPropsChange pois foi alterado fora do contexto do render.
+			this.updateView();
+		}
 
-    render() {
+		render() {
 			this.lastRender = new Date(); // executa onPropsChange pois foi alterado dentro do render
-      return (
-        <form onSubmit={this.form.handleSubmit(this.onSubmit)}>
-          {/* inputs */}
-        </form>
-      );
-    }
-  }
+			return (
+				<form onSubmit={this.form.handleSubmit(this.onSubmit)}>
+					{/* inputs */}
+				</form>
+			);
+		}
+	},
 );
 ```
 
@@ -180,6 +182,7 @@ export const MyComponent = ReactWrapper(
 ---
 
 Se quiser, eu posso:
+
 - mover este arquivo para outro local (por exemplo `docs/` na raiz) ou transformá-lo em um README.md automático no pacote `packages/react`.
 - adicionar exemplos de código mais detalhados ou testes que mostrem o rebind e o `onChanges` sendo disparados.
 - gerar um diagrama simples do fluxo (instanciação -> setupHooks -> render -> updateView).

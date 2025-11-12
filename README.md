@@ -144,11 +144,13 @@ pnpm up jest --latest --recursive --filter=web --filter=@repo/ui --filter=docs
 To keep dependencies on the same version across multiple packages, you can use the following command:
 
 use `list-mismatches` to see which dependencies are out of sync:
+
 ```sh
 pnpm dlx syncpack list-mismatches
 ```
 
 then use `fix-mismatches` to align versions:
+
 ```sh
 pnpm dlx syncpack fix-mismatches --filter=mismatched-package
 ```

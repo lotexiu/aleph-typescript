@@ -16,48 +16,51 @@ Este é um monorepo Turborepo + pnpm focado em utilitários TypeScript avançado
 
 ```tsx
 export const MyComponent = ReactWrapper(
-  class MyComponent extends ReactClientComponent /** Também é possivel realizar `extends ReactWrapper.ClientComponent` */ {
-    form: any;
-    serverMessage: string | null = null;
+	class MyComponent extends ReactClientComponent /** Também é possivel realizar `extends ReactWrapper.ClientComponent` */ {
+		form: any;
+		serverMessage: string | null = null;
 		lastRender: Date;
 
-    setupHooks(): void {
-      this.form = useForm({ defaultValues: { a: '' } });
-    }
+		setupHooks(): void {
+			this.form = useForm({ defaultValues: { a: "" } });
+		}
 
-    onChanges(property: Property<this, keyof this>): void {
-      // reagir a mudanças em campos da classe
-    }
+		onChanges(property: Property<this, keyof this>): void {
+			// reagir a mudanças em campos da classe
+		}
 
-    onComponentPropsChange(newProps: Partial<typeof this.props>): void {
-      // reagir a mudanças externas nos props (vindas do pai)
-      // ex: sincronizar estado interno quando props mudam
-    }
+		onComponentPropsChange(newProps: Partial<typeof this.props>): void {
+			// reagir a mudanças externas nos props (vindas do pai)
+			// ex: sincronizar estado interno quando props mudam
+		}
 
-    onPropsChange(properties: Property<this["props"], keyof this["props"]>): void {
-      // reagir a mudanças internas em this.props ocasionadas pelo render
-    }
+		onPropsChange(
+			properties: Property<this["props"], keyof this["props"]>,
+		): void {
+			// reagir a mudanças internas em this.props ocasionadas pelo render
+		}
 
-    async onSubmit(values: any) {
-      this.serverMessage = null;
-      // ... await fetch
-      this.serverMessage = 'ok'; // Não executa onPropsChange pois foi alterado fora do contexto do render.
-      this.updateView();
-    }
+		async onSubmit(values: any) {
+			this.serverMessage = null;
+			// ... await fetch
+			this.serverMessage = "ok"; // Não executa onPropsChange pois foi alterado fora do contexto do render.
+			this.updateView();
+		}
 
-    render() {
+		render() {
 			this.lastRender = new Date(); // executa onPropsChange pois foi alterado dentro do render
-      return (
-        <form onSubmit={this.form.handleSubmit(this.onSubmit)}>
-          {/* inputs */}
-        </form>
-      );
-    }
-  }
+			return (
+				<form onSubmit={this.form.handleSubmit(this.onSubmit)}>
+					{/* inputs */}
+				</form>
+			);
+		}
+	},
 );
 ```
 
 **Regras obrigatórias:**
+
 1. Hooks somente em `setupHooks()` - nunca no constructor ou render
 2. Chame `this.updateView()` após mutar campos da classe (ex: `this.serverMessage = 'ok'`)
 3. `this.onSubmit` não precisa de `.bind(this)` - o rebind é automático via ProxyHandler
@@ -83,19 +86,20 @@ Este projeto estende protótipos nativos do JavaScript via `_Global.register`:
 ```typescript
 // Em packages/typescript/src/global.ts
 declare global {
-  interface Function {
-    rebind<T>(this: T, context: any): TRebindedFunction<T>
-  }
+	interface Function {
+		rebind<T>(this: T, context: any): TRebindedFunction<T>;
+	}
 }
 
 _Global.register(Function, {
-  rebind: function(this: TFunction, context: any) {
-    return _Function.rebind(this, context);
-  }
-})
+	rebind: function (this: TFunction, context: any) {
+		return _Function.rebind(this, context);
+	},
+});
 ```
 
 **Quando adicionar extensões:**
+
 - Declare tipos em `global.ts` (seção `declare global`)
 - Implemente em `packages/typescript/src/natives/<tipo>/generic/implementations.ts`
 - Registre via `_Global.register()` no final do `global.ts`
@@ -107,15 +111,21 @@ O `ProxyHandler` (em `packages/typescript/src/natives/object/proxy/ProxyHandler.
 
 ```typescript
 const proxy = proxyHandler(instance, {
-  allProxy: false,
-  onChanges: (property) => { /* reage a mudanças */ },
-  properties: {
-    specificProp: {
-      onSet: (value) => { /* quando specificProp muda */ },
-      onGet: (value) => { /* quando acessa specificProp */ }
-    }
-  }
-})
+	allProxy: false,
+	onChanges: (property) => {
+		/* reage a mudanças */
+	},
+	properties: {
+		specificProp: {
+			onSet: (value) => {
+				/* quando specificProp muda */
+			},
+			onGet: (value) => {
+				/* quando acessa specificProp */
+			},
+		},
+	},
+});
 ```
 
 Usado em `ReactBaseComponent` para detectar mutações e disparar lifecycle hooks (`onChanges`, `onPropsChange`).
@@ -144,12 +154,12 @@ Use path aliases definidos em `tsconfig.json`:
 
 ```typescript
 // Pacotes internos
-import { ReactWrapper } from '@lotexiu/react/components/implementations';
-import '@ts/global'; // Carrega extensões nativas
-import { Property } from '@lotexiu/typescript/natives/object/proxy/types';
+import { ReactWrapper } from "@lotexiu/react/components/implementations";
+import "@ts/global"; // Carrega extensões nativas
+import { Property } from "@lotexiu/typescript/natives/object/proxy/types";
 
 // Apps Next.js
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 ```
 
 ## Sistema de Exports Granulares
@@ -170,6 +180,7 @@ Pacotes usam exports granulares no `package.json`:
 ## Padrões de Código
 
 1. **Classes com Proxy:** Quando criar classes observáveis, sempre retorne o proxy do constructor:
+
    ```typescript
    constructor() {
      const proxy = proxyHandler(this, {...});
@@ -203,6 +214,7 @@ pnpm run git-sync  # Sincroniza submodules
 ---
 
 **Documentação adicional:**
+
 - `README-ReactWrapper.md` - Guia completo do padrão ReactWrapper
 - `packages/react/README.md` - Detalhes do pacote React
 - `packages/typescript/README.md` - Utilitários TypeScript
