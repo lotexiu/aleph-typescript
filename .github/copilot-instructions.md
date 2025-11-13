@@ -16,7 +16,7 @@ Este é um monorepo Turborepo + pnpm focado em utilitários TypeScript avançado
 
 ```tsx
 export const MyComponent = ReactWrapper(
-	class MyComponent extends ReactClientComponent /** Também é possivel realizar `extends ReactWrapper.ClientComponent` */ {
+	class MyComponent extends ReactUIClient() /** Também é possivel realizar `extends ReactWrapper.Client` */ {
 		form: any;
 		serverMessage: string | null = null;
 		lastRender: Date;
@@ -59,21 +59,60 @@ export const MyComponent = ReactWrapper(
 );
 ```
 
+### Extendendo de uma classe customizada
+
+Você pode passar uma classe base para `ReactUIClient()` ou `ReactUIServer()` para herdar funcionalidades adicionais:
+
+```tsx
+class FormBaseComponent {
+	protected validateEmail(email: string): boolean {
+		return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+	}
+}
+
+export const MyForm = ReactWrapper(
+	class MyForm extends ReactUIClient(FormBaseComponent) {
+		// Agora tem acesso a validateEmail() e outras funcionalidades da classe base
+		async onSubmit(values: any) {
+			if (!this.validateEmail(values.email)) {
+				// validação falhou
+				return;
+			}
+			// ...
+		}
+		
+		render() { /* ... */ }
+	}
+);
+```
+
+**Cadeia de herança:** `MyForm` → `ReactUIClient(FormBaseComponent)` → `ReactUI(FormBaseComponent)` → `FormBaseComponent`
+
 **Regras obrigatórias:**
 
 1. Hooks somente em `setupHooks()` - nunca no constructor ou render
-2. Chame `this.updateView()` após mutar campos da classe (ex: `this.serverMessage = 'ok'`)
+2. Chame `this.updateView()` após mutar campos da classe (ex: `this.serverMessage = 'ok'`) - apenas em client components
 3. `this.onSubmit` não precisa de `.bind(this)` - o rebind é automático via ProxyHandler
-4. Use `ReactServerComponent` para componentes server-side (sem hooks de cliente)
+4. Use `ReactUIServer()` para componentes server-side (sem hooks de cliente)
+5. `onDestroy()` só funciona em client components (não há cleanup no servidor)
+6. Use `this.originalProps` se precisar dos props originais imutáveis
+7. `render()` pode ser async para server components: `async render(): Promise<ReactNode>`
+8. Para compartilhar lógica entre componentes, passe uma classe base: `ReactUIClient(MinhaClasseBase)`
 
-### Lifecycle Hooks do ReactBaseComponent
+### Lifecycle Hooks do ReactUI()
 
-- **`onInit()`**: Executado quando o componente é inicializado
+- **`onInitBeforeRender()`**: Executado ANTES do primeiro render - útil para inicialização síncrona que deve acontecer antes da UI aparecer
+- **`onInit()`**: Executado quando o componente é inicializado (após primeiro render para client, imediatamente após construção para server)
+- **`onDestroy()`**: Executado quando o componente desmonta (apenas para client components - chamado no cleanup do useEffect)
 - **`setupHooks()`**: Onde TODOS os hooks do React devem ser chamados (useForm, useEffect, useState, etc)
 - **`onChanges(property)`**: Disparado quando qualquer campo da instância muda (via ProxyHandler)
-- **`onComponentPropsChange(newProps)`**: Disparado quando props são alterados externamente (pelo componente pai ou via binding) - use para sincronizar estado interno
+- **`onComponentPropsChange(newProps)`**: Disparado quando props são alterados externamente (pelo componente pai ou via binding) - use para sincronizar estado interno. O proxy de `this.props` é removido e recriado neste momento.
 - **`onPropsChange(properties)`**: Disparado quando há alterações internas em `this.props` ocasionado pelo render
-- **`render()`**: Retorna o JSX do componente (método abstrato obrigatório)
+- **`render()`**: Retorna o JSX do componente (método abstrato obrigatório). Pode retornar `Promise<ReactNode>` para server components async.
+
+**Propriedades especiais:**
+- `this.props` - Props mutáveis (observados pelo proxy)
+- `this.originalProps` - Props readonly originais (não sofrem mutações)
 
 **Diferença importante:** `onComponentPropsChange` = mudanças externas nos props (vindas do pai); `onPropsChange` = mudanças internas em `this.props`.
 
@@ -128,7 +167,7 @@ const proxy = proxyHandler(instance, {
 });
 ```
 
-Usado em `ReactBaseComponent` para detectar mutações e disparar lifecycle hooks (`onChanges`, `onPropsChange`).
+Usado em `ReactUI()` para detectar mutações e disparar lifecycle hooks (`onChanges`, `onPropsChange`).
 
 ## Comandos de Build e Dev
 
@@ -192,13 +231,15 @@ Pacotes usam exports granulares no `package.json`:
 
 3. **TypeScript Avançado:** Este projeto usa tipos complexos (`TConstructor`, `Property<T>`, `TRebindedFunction`) - sempre cheque os tipos em `packages/typescript/src/natives/*/generic/types.ts`
 
-4. **Server vs Client:** Em Next.js, sempre use `"use client"` em arquivos que usam `ReactClientComponent`
+4. **Server vs Client:** Em Next.js, sempre use `"use client"` em arquivos que usam `ReactUIClient()`
 
 ## Debugging
 
 - **"Cannot call hooks outside render"**: Mova hooks para `setupHooks()` na classe
-- **"updateView não definido"**: Componente não montou ainda; chame `updateView()` apenas após mutações durante o ciclo de vida do componente
-- **Mudanças não refletem na UI**: Esqueceu de chamar `this.updateView()` após mutar campos
+- **"updateView não definido"**: Componente não montou ainda; chame `updateView()` apenas após mutações durante o ciclo de vida do componente (e apenas em client components)
+- **Mudanças não refletem na UI**: Esqueceu de chamar `this.updateView()` após mutar campos (client components)
+- **Props não atualizam**: Verifique se `onComponentPropsChange()` está sendo usado para sincronizar estado interno quando props externos mudam
+- **Instância resetando inesperadamente**: O wrapper detecta mudanças na classe (via `Object.getPrototypeOf()`) e reseta automaticamente - normal durante hot reload
 
 ## Estrutura de Testes
 
