@@ -13,7 +13,7 @@
     "upd": "pnpm up -r -i",
 		"upd-l": "pnpm up -r -L",
     "git-init": "git submodule update --init --recursive",
-    "git-sync": "pnpm git-init && git submodule update --remote --recursive",
+    "git-sync": "pnpm git-init && git submodule update --remote --recursive && git pull",
 		"clean": "find . -name \"node_modules\" -type d -prune -exec rm -rf '{}' + && pnpm store prune"
   },
   "devDependencies": {
