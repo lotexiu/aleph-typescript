@@ -1,10 +1,14 @@
 packages:
   - apps/*
   - packages/*
+  - packages/*/dist
 
 onlyBuiltDependencies:
+  - '@parcel/watcher'
   - cpu-features
   - esbuild
+  - lmdb
+  - msgpackr-extract
   - protobufjs
   - sharp
   - ssh2

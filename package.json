@@ -4,9 +4,7 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo dev",
-    "lint": "turbo run lint",
     "format": "prettier --use-tabs --write \"**/*.{ts,tsx,md}\"",
-    "check-types": "turbo run check-types",
     "new": "turbo gen workspace",
     "mismatch": "pnpm dlx syncpack list-mismatches",
     "outd": "pnpm outdated -r",
