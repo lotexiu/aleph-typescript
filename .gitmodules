@@ -9,7 +9,7 @@
 [submodule "packages/eslint-config"]
 	path = packages/eslint-config
 	url = https://github.com/lotexiu/eslint-config.git
-	
+
 [submodule "packages/typescript-config"]
 	path = packages/typescript-config
 	url = https://github.com/lotexiu/typescript-config.git
@@ -21,3 +21,7 @@
 [submodule "apps/docker-management"]
 	path = apps/docker-management
 	url = https://github.com/lotexiu/docker-management.git
+
+[submodule "apps/clube-desconto-front"]
+	path = apps/clube-desconto-front
+	url = https://github.com/lotexiu/clube-desconto-front.git
