@@ -18,10 +18,6 @@
 	path = packages/vite-utils
 	url = https://github.com/lotexiu/vite-utils.git
 
-[submodule "apps/docker-management"]
-	path = apps/docker-management
-	url = https://github.com/lotexiu/docker-management.git
-
-[submodule "apps/clube-desconto-front"]
-	path = apps/clube-desconto-front
-	url = https://github.com/lotexiu/clube-desconto-front.git
+[submodule "apps/proton-desk"]
+	path = apps/proton-desk
+	url = https://github.com/lotexiu/proton-desk.git
