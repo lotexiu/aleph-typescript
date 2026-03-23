@@ -1,261 +1,377 @@
-# AI Coding Agent Instructions - aleph-typescript Monorepo
+# Copilot Instructions — aleph-typescript
 
-## Arquitetura do Monorepo
+## Estado do Projeto e Política de Atualização
 
-Este é um monorepo Turborepo + pnpm focado em utilitários TypeScript avançados e um padrão único de React baseado em classes. Estrutura:
+> **Este projeto está em desenvolvimento ativo.** O código aqui não é a versão final — mudanças pequenas e grandes acontecerão continuamente.
 
-- **`packages/typescript`**: Biblioteca core com extensões de nativos (String, Number, Function, Object) e sistema de Proxy para observabilidade
-- **`packages/react`**: Sistema `ReactWrapper` que permite escrever componentes React como classes OOP (similar ao Angular)
-- **`packages/vite-utils`**: Plugins Vite customizados para build (`BetterOutDirClean`, `CopyAllSASS`, etc)
-- **`packages/*-config`**: Configurações compartilhadas (ESLint, TypeScript)
-- **`apps/docker-management`**: Next.js 15 app usando o padrão ReactWrapper
+### Foco atual
 
-## Padrão ReactWrapper (CRÍTICO)
+O desenvolvimento está centrado no app **`apps/proton-desk`** (Vite + React). Durante a criação do app, os pacotes `packages/typescript` e `packages/react` receberão atualizações frequentes — novas features, correções e ajustes de API descobertos durante o uso real no app.
 
-**Não use React functional components padrão neste projeto.** Em vez disso, use o `ReactWrapper`:
+**Pacotes com maior probabilidade de mudança:**
+- `packages/react` — especialmente `ReactWrapper` e o `ProxyHandler` reativo
+- `packages/typescript` — novas utilidades conforme a necessidade do app
 
-```tsx
-export const MyComponent = ReactWrapper(
-	class MyComponent extends ReactUIClient() /** Também é possivel realizar `extends ReactWrapper.Client` */ {
-		form: any;
-		serverMessage: string | null = null;
-		lastRender: Date;
+### Regra de sincronização de documentação
 
-		setupHooks(): void {
-			this.form = useForm({ defaultValues: { a: "" } });
-		}
+**Toda vez que um pacote recebe uma mudança** (novo módulo, alteração de API, correção, novo comportamento), é obrigatório:
 
-		onChanges(property: Property<this, keyof this>): void {
-			// reagir a mudanças em campos da classe
-		}
+1. **Atualizar os arquivos `.github/`** correspondentes:
+   - `copilot-instructions.md` — se mudar a arquitetura geral ou APIs fundamentais
+   - `agents/<pacote>.agent.md` — se mudar APIs ou comportamentos do pacote
+   - `instructions/<pacote>-src.instructions.md` — se mudar convenções ou regras de escrita de código
+   - `prompts/` — se mudar o processo de criação de novos módulos/componentes
 
-		onComponentPropsChange(newProps: Partial<typeof this.props>): void {
-			// reagir a mudanças externas nos props (vindas do pai)
-			// ex: sincronizar estado interno quando props mudam
-		}
+2. **Atualizar o `README.md`** do pacote afetado com o novo comportamento
 
-		onPropsChange(
-			properties: Property<this["props"], keyof this["props"]>,
-		): void {
-			// reagir a mudanças internas em this.props ocasionadas pelo render
-		}
+3. **Manter este arquivo** (`copilot-instructions.md`) como a fonte de verdade do estado atual do projeto
 
-		async onSubmit(values: any) {
-			this.serverMessage = null;
-			// ... await fetch
-			this.serverMessage = "ok"; // Não executa onPropsChange pois foi alterado fora do contexto do render.
-			this.updateView();
-		}
+> **Motivo:** como o projeto muda frequentemente, ter a documentação desatualizada causa erros — o modelo trabalhará com uma visão errada da API existente e gerará código incompatível.
 
-		render() {
-			this.lastRender = new Date(); // executa onPropsChange pois foi alterado dentro do render
-			return (
-				<form onSubmit={this.form.handleSubmit(this.onSubmit)}>
-					{/* inputs */}
-				</form>
-			);
-		}
-	},
-);
+---
+
+## Visão Geral do Projeto
+
+Monorepo TypeScript gerenciado com **pnpm workspaces** + **Turborepo**. Escopo npm: `@lotexiu/`.
+
+### Pacotes principais (`packages/`)
+
+| Pacote | Nome npm | Descrição |
+|---|---|---|
+| `packages/typescript` | `@lotexiu/typescript` | Biblioteca utilitária TypeScript pura (tipos, funções, extensões de nativos, temas, keyboard, proxy) |
+| `packages/react` | `@lotexiu/react` | Framework de componentes React OOP (class-based) |
+| `packages/vite-utils` | `@lotexiu/vite-utils` | Plugins Vite e utilitários de build (sem compilação própria, source-linked via `exports: ./*: ./src/*.ts`) |
+| `packages/typescript-config` | `@lotexiu/typescript-config` | Configs tsconfig compartilhadas |
+| `packages/eslint-config` | `@lotexiu/eslint-config` | Configs ESLint compartilhadas |
+
+App: `apps/proton-desk` — app Vite + React (ainda vazia/em desenvolvimento).
+
+---
+
+## Convenções de Código
+
+### Nomenclatura de Tipos
+
+- **Prefixo `T` obrigatório** em todos os tipos: `TFunction`, `TObject`, `TClazz`, `TNullable`, `TKeyOf`, etc.
+- Tipos nativos re-exportados com prefixo `_I`: `_IRequired`, `_IReadonly`, `_IPick` → re-exportados como `Required`, `Readonly`, `Pick` do arquivo `types.native.ts`
+- Genéricos de tipo-mapeamento: `TMap`, `TMapRec`, `TPair`, `TUnionize`, `TKeysOfType`
+
+### Organização de Arquivos por Módulo
+
+Cada módulo segue o padrão:
+```
+modulo/
+  types.ts          → apenas tipos (type/interface), sem runtime
+  implementations.ts → funções puras exportadas como objeto `_NomeUtils`
+  utils.ts           → classe estática `NomeUtils` wrapeando o objeto `_NomeUtils`
+  declarations.ts    → constantes e declarações runtime (ex: `const Timeout = ...`)
 ```
 
-### Extendendo de uma classe customizada
+- `implementations.ts` exporta objeto: `export const _Object = { isEmptyObj, circularReferenceHandler, ... }`
+- `utils.ts` exporta classe estática: `export class ObjectUtils { static isEmptyObj = _Object.isEmptyObj; ... }`
+- Arquivos `types.ts` geram **empty chunks** no build (0.00 kB) — comportamento esperado e correto
 
-Você pode passar uma classe base para `ReactUIClient()` ou `ReactUIServer()` para herdar funcionalidades adicionais:
+### Aliases de Path (tsconfig.json de cada pacote)
 
-```tsx
-class FormBaseComponent {
-	protected validateEmail(email: string): boolean {
-		return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-	}
+No `packages/typescript`:
+```
+@ts/*        → ./src/*
+@tsn/*       → ./src/natives/*
+@tsn-array/* → ./src/natives/array/*
+@tsn-class/* → ./src/natives/class/*
+@tsn-function/* → ./src/natives/function/*
+@tsn-object/* → ./src/natives/object/*
+@tsn-string/* → ./src/natives/string/*
+```
+
+### Indentação e Formatação
+
+- **Tabs** para indentação (não espaços)
+- Prettier configurado com `--use-tabs`
+- Aspas duplas para strings de tipo, aspas simples no JS geral
+
+---
+
+## Sistema de Build
+
+### Fluxo de Build (Turborepo)
+
+```
+turbo run build
+  ├── @lotexiu/typescript-config   (sem build)
+  ├── @lotexiu/eslint-config       (sem build)
+  ├── @lotexiu/vite-utils          (sem build — source-linked)
+  ├── @lotexiu/typescript          (vite build → dist/)
+  ├── @lotexiu/react               (pnpm clean && vite build → dist/)
+  └── proton-desk                  (tsc -b && vite build → dist/)
+```
+
+Turborepo respeita `dependsOn: ["^build"]` — dependências são buildadas primeiro.
+
+### Configuração Vite (padrão para bibliotecas)
+
+Ambos `packages/typescript` e `packages/react` usam a mesma estratégia:
+
+```typescript
+// Dual output: ESM (.js) + CJS (.cjs), módulos preservados
+rollupOptions: {
+  output: [
+    { format: 'es',  preserveModules: true, preserveModulesRoot: 'src', entryFileNames: '[name].js' },
+    { format: 'cjs', preserveModules: true, preserveModulesRoot: 'src', entryFileNames: '[name].cjs' }
+  ]
 }
-
-export const MyForm = ReactWrapper(
-	class MyForm extends ReactUIClient(FormBaseComponent) {
-		// Agora tem acesso a validateEmail() e outras funcionalidades da classe base
-		async onSubmit(values: any) {
-			if (!this.validateEmail(values.email)) {
-				// validação falhou
-				return;
-			}
-			// ...
-		}
-		
-		render() { /* ... */ }
-	}
-);
 ```
 
-**Cadeia de herança:** `MyForm` → `ReactUIClient(FormBaseComponent)` → `ReactUI(FormBaseComponent)` → `FormBaseComponent`
+- `minify: false` — obrigatório para hot reload funcionar no React
+- `emptyOutDir: false` — limpeza feita pelo `betterOutDirCleanPlugin`
+- `vite-plugin-dts` gera `.d.ts` e `.d.ts.map`
 
-**Regras obrigatórias:**
+### Plugins `@lotexiu/vite-utils`
 
-1. Hooks somente em `setupHooks()` - nunca no constructor ou render
-2. Chame `this.updateView()` após mutar campos da classe (ex: `this.serverMessage = 'ok'`) - apenas em client components
-3. `this.onSubmit` não precisa de `.bind(this)` - o rebind é automático via ProxyHandler
-4. Use `ReactUIServer()` para componentes server-side (sem hooks de cliente)
-5. `onDestroy()` só funciona em client components (não há cleanup no servidor)
-6. Use `this.originalProps` se precisar dos props originais imutáveis
-7. `render()` pode ser async para server components: `async render(): Promise<ReactNode>`
-8. Para compartilhar lógica entre componentes, passe uma classe base: `ReactUIClient(MinhaClasseBase)`
+| Plugin | Função |
+|---|---|
+| `betterOutDirCleanPlugin()` | Remove arquivos `.js`/`.cjs` órfãos do build anterior (não remove novos) |
+| `packageJsonPlugin(['dist', './'])` | Auto-gera as `exports` em `package.json` a partir dos arquivos em `dist/` |
+| `createIndexFile(libSrc)` | Gera `src/index.ts` com `export * from` para todos os arquivos `.ts` da `src/` |
+| `indexPlugin()` | Gera `dist/index.js`, `dist/index.cjs`, `dist/index.d.ts` |
+| `copyAllSASSPlugin(srcDir)` | Copia `.scss`/`.sass` para `dist/` sem processar |
+| `excludeSASSPProcessPlugin(srcDir)` | Marca SASS como external no Rollup |
+| `preserveKeywordsPlugin()` | Preserva keywords TypeScript (`abstract`, `readonly`, etc.) nos `.d.ts` |
 
-### Lifecycle Hooks do ReactUI()
+### Outputs do Build
 
-- **`onInitBeforeRender()`**: Executado ANTES do primeiro render - útil para inicialização síncrona que deve acontecer antes da UI aparecer
-- **`onInit()`**: Executado quando o componente é inicializado (após primeiro render para client, imediatamente após construção para server)
-- **`onDestroy()`**: Executado quando o componente desmonta (apenas para client components - chamado no cleanup do useEffect)
-- **`setupHooks()`**: Onde TODOS os hooks do React devem ser chamados (useForm, useEffect, useState, etc)
-- **`onChanges(property)`**: Disparado quando qualquer campo da instância muda (via ProxyHandler)
-- **`onComponentPropsChange(newProps)`**: Disparado quando props são alterados externamente (pelo componente pai ou via binding) - use para sincronizar estado interno. O proxy de `this.props` é removido e recriado neste momento.
-- **`onPropsChange(properties)`**: Disparado quando há alterações internas em `this.props` ocasionado pelo render
-- **`render()`**: Retorna o JSX do componente (método abstrato obrigatório). Pode retornar `Promise<ReactNode>` para server components async.
+Estrutura espelhada de `src/` em `dist/`:
+```
+dist/
+  index.js / index.cjs / index.d.ts / index.d.ts.map
+  implementations.js / .cjs / .d.ts / .d.ts.map
+  types.js (empty, 0.00 kB) / types.d.ts
+  global.js / .cjs / .d.ts
+  natives/
+    object/generic/implementations.js / .cjs / .d.ts
+    object/proxy/ProxyHandler.js / .cjs / .d.ts
+    string/generic/implementations.js / .cjs / .d.ts
+    class/types.js (empty) / .d.ts
+    ...
+  theme/
+    builders.js / implementations.js / themes.js / utils.js / types.js (empty)
+  value-history/implementation.js / types.js (empty)
+  html/keyboard-capture/implementation.js / types.js (empty)
+```
 
-**Propriedades especiais:**
-- `this.props` - Props mutáveis (observados pelo proxy)
-- `this.originalProps` - Props readonly originais (não sofrem mutações)
+### Exportações do package.json
 
-**Diferença importante:** `onComponentPropsChange` = mudanças externas nos props (vindas do pai); `onPropsChange` = mudanças internas em `this.props`.
+O `packageJsonPlugin` auto-gera as `exports` no `package.json` baseado nos arquivos em `dist/`. Não editá-las manualmente — são sobrescritas no build.
 
-Veja `README-ReactWrapper.md` para detalhes completos e `apps/docker-management/src/app/login/client/SignIn.tsx` como exemplo de referência.
+---
 
-## Sistema de Extensões Nativas (`packages/typescript`)
+## Pacote `@lotexiu/typescript`
 
-Este projeto estende protótipos nativos do JavaScript via `_Global.register`:
+### Módulos Principais
+
+**`src/implementations.ts`** — funções globais de comparação e nulidade:
+- `isNull(value, ...customNullValues)` — verifica nulidade com valores customizados
+- `isNullOrUndefined(value)` — retorna `value == null`
+- `equals(a, b, ...customNullValues)` — comparação JSON-based com suporte a nulos
+- `includes(values, value)` — type-narrowing para literais em arrays
+
+**`src/types.ts`** — tipos utilitários base:
+- `TNullable<T, NoVoid>` — `T | undefined | null | void`
+- `TNever<T>` — representa `null | never`
+- `TNotUndefined<T>` — exclui `undefined`
+- `As<T, U>` — interseção condicional type-safe
+- `TTypeOfValue` — tipo do `typeof`
+
+**`src/global.ts`** — extensões de protótipos nativos via `_Global.register()`:
+- `String.prototype.toKebabCase`, `.capitalize`, `.capitalizeAll`, `.rightPad`, `.leftPad`, `.removeCharacters`, `.noAccent`, `.stringToCharCodeArray`, `.getFirstDifferentIndex`, `.getLastDifferentIndex`
+- `Function.prototype.thisAsParameter()` — converte lambda `(this: T, ...args) => R` em método encadeável
+- `Function.prototype.rebind(context, ...args)` — currying type-safe com re-bind de contexto
+
+**`src/global/implementation.ts`**:
+- `_Global.register(target, extension)` — registra métodos no `prototype` via `Object.defineProperty`
+
+### `natives/object`
+
+**`src/natives/object/generic/implementations.ts`** (`_Object`):
+- `isEmptyObj(obj)` — verifica se objeto não tem chaves
+- `circularReferenceHandler()` — replacer para `JSON.stringify` sem circular refs
+- `addPrefixToKeys(obj, prefix)` — retorna novo objeto com chaves prefixadas e capitalizadas
+- `getValueFromPath(obj, path)` — acesse `obj.a.b.c` com string `"a.b.c"`
+- `setValueFromPath(obj, path, value)` — define valor em caminho pontilhado
+- `removeNullFields(obj)` — remove campos nulos/undefined
+- `thisAsParameter(fn)` — converte função com `this` em função normal
+- `isAClassDeclaration(obj)` — verifica se é declaração `class`
+- `differenceBetweenObjects(objA, objB)` — retorna campos diferentes
+
+**`src/natives/object/proxy/ProxyHandler.ts`**:
+- `proxyHandler(target, options: ProxyOptions<T>)` — cria proxy reativo com callbacks `onChanges`, `onSet`, `onGet` por propriedade
+- `deleteProxy(proxy)` — remove proxy
+
+**`src/natives/object/proxy/types.ts`**:
+- `ProxyOptions<T>` — configuração de proxy com callbacks por propriedade
+- `Property<T, Key>` — snapshot de mudança: `{ name, value, previousValue, state }`
+- `PropertyState` — `"new" | "updated" | "deleted" | "defined"`
+
+### `natives/class`
+
+- `TConstructor<T>` — `new (...args) => T`
+- `TClazz<T>` — construtor + Function + NewableFunction
+- `TExtendClass<T, E>` — interseção de construtores
+- `instanceOf(obj, constructor)` — narrowing de instância
+- `Timeout` — construtor do `NodeJS.Timeout` (para instanceOf)
+
+### `natives/function/generic`
+
+**Tipos**: `TFunction`, `TModifyReturnType`, `TParameters`, `TReturnType`, `TInstanceType`, `TOptionalParameters`, `TLambdaToFunction`, `TRebindedFunction`
+
+**Implementações** (`_Function`):
+- `rebind(fn, context, ...initialArgs)` — cria função com contexto/args fixados, encadeável (preserva `.fn` e `.args`)
+
+### `natives/string/generic`
+
+`_String`:
+- `toKebabCase`, `capitalize`, `capitalizeAll`, `rightPad`, `leftPad`
+- `getFirstDifferentIndex`, `getLastDifferentIndex`
+- `removeCharacters`, `noAccent`
+
+### `theme/`
+
+Sistema de temas baseado em **colorjs.io** com espaço de cor **LCH** (perceptualmente uniforme).
+
+**`ThemeUtils`**:
+- `themeSchema(mainColorKeys, baseColor, variationsBuilder, foregroundBuilder)` — define schema de tema
+- `oppositeColor(color, options: TOppositeColorOptions)` — gera cor oposta/contrastante em LCH
+- `applyThemeToDocument(theme)` — aplica tema como CSS custom properties
+- `getCurrentTheme()` — retorna tema atual
+
+**`TOppositeColorOptions`**: `{ h?, l?, s? }` com valores `"weak" | "medium" | "full" | "fullRange" | "middleRange" | "maxRange" | "minRange" | number`
+
+**`DefaultThemeBuilder`** — builder pré-configurado com: `background`, `foreground`, `primary`, `accent`, + geração automática de variações (card, popover, secondary, destructive, muted, border, input, ring, charts, sidebar, error, warning, success)
+
+**`DefaultThemes`** — temas prontos: `basic`, `synthwave`, `synthwaveNeon`, `minimalist` (com variantes `dark`/`light`)
+
+### `value-history/`
+
+`ValueHistory<T>` — histórico com undo/redo:
+- `add(item)`, `undo()`, `redo()`, `clear()`
+- `canUndo`, `canRedo`, `current`, `previous`, `next`
+- Callbacks: `onBeforeRedo`, `onBeforeUndo`, `onBeforeRegister`, `onBeforeClear`
+
+### `html/keyboard-capture/`
+
+`KeyboardCapture` — captura global de teclado:
+- `KeyboardCapture.add(listener, ...actions)` → retorna `UnListener`
+- Combos de teclas: `TKeyboardAction` com `combo: TKeyboardEventCode[] | TKeyboardEventCode[][]`
+- Previne teclas travadas em atalhos do browser (escuta `window.blur`)
+
+---
+
+## Pacote `@lotexiu/react`
+
+### Padrão OOP de Componentes
+
+Componentes são escritos como **classes** e convertidos para componentes React via `ReactWrapper`.
 
 ```typescript
-// Em packages/typescript/src/global.ts
-declare global {
-	interface Function {
-		rebind<T>(this: T, context: any): TRebindedFunction<T>;
-	}
-}
+const MeuComponente = ReactWrapper(
+  class MeuComponente extends ReactUIClient() {
+    // Props são passadas no construtor
+    // this.props é mutável, this.originalProps é readonly
 
-_Global.register(Function, {
-	rebind: function (this: TFunction, context: any) {
-		return _Function.rebind(this, context);
-	},
-});
-```
+    onInitBeforeRender(): void {}  // antes do primeiro render
+    onInit(): void {}              // após primeiro render
+    onDestroy(): void {}           // cleanup (useEffect cleanup)
+    setupHooks(): void {}          // contexto de hooks React — usar hooks AQUI
+    onChanges(property: Property<this>): void {}       // qualquer prop da instância mudou
+    onPropsChange(property: Property<this['props']>): void {} // props.X mudou
 
-**Quando adicionar extensões:**
-
-- Declare tipos em `global.ts` (seção `declare global`)
-- Implemente em `packages/typescript/src/natives/<tipo>/generic/implementations.ts`
-- Registre via `_Global.register()` no final do `global.ts`
-- Import `'@ts/global'` nos arquivos que usam as extensões
-
-## ProxyHandler e Observabilidade
-
-O `ProxyHandler` (em `packages/typescript/src/natives/object/proxy/ProxyHandler.ts`) intercepta mudanças em objetos:
-
-```typescript
-const proxy = proxyHandler(instance, {
-	allProxy: false,
-	onChanges: (property) => {
-		/* reage a mudanças */
-	},
-	properties: {
-		specificProp: {
-			onSet: (value) => {
-				/* quando specificProp muda */
-			},
-			onGet: (value) => {
-				/* quando acessa specificProp */
-			},
-		},
-	},
-});
-```
-
-Usado em `ReactUI()` para detectar mutações e disparar lifecycle hooks (`onChanges`, `onPropsChange`).
-
-## Comandos de Build e Dev
-
-```bash
-# Desenvolvimento (todos os pacotes)
-pnpm dev  # Usa turbo dev (persistent mode)
-
-# Build específico
-pnpm turbo build --filter=@lotexiu/react
-
-# Dev de app específico
-pnpm turbo dev --filter=docker-management
-
-# Consertar dependências desalinhadas
-pnpm run fix-mismatch
-```
-
-**Importante:** Builds usam Vite com plugins customizados. Sempre verifique `vite.config.ts` nos pacotes.
-
-## Convenções de Imports
-
-Use path aliases definidos em `tsconfig.json`:
-
-```typescript
-// Pacotes internos
-import { ReactWrapper } from "@lotexiu/react/components/implementations";
-import "@ts/global"; // Carrega extensões nativas
-import { Property } from "@lotexiu/typescript/natives/object/proxy/types";
-
-// Apps Next.js
-import { Button } from "@/components/ui/button";
-```
-
-## Sistema de Exports Granulares
-
-Pacotes usam exports granulares no `package.json`:
-
-```json
-"exports": {
-  "./theme/implementations": {
-    "import": "./dist/theme/implementations.mjs",
-    "types": "./dist/theme/implementations.d.ts"
+    abstract render(): ReactNode;
   }
-}
+)
 ```
 
-**Ao adicionar novos módulos:** Atualize `exports` no `package.json` e reconstrua o pacote.
+### Hierarquia de Classes
 
-## Padrões de Código
+```
+ReactUI(extendsClass?)          → base abstrata, static ReactUIType = 'base'
+  └── ReactUIClient(extendsClass?) → client component, static ReactUIType = 'client'
+  └── ReactUIServer(extendsClass?) → server component, static ReactUIType = 'server'
+```
 
-1. **Classes com Proxy:** Quando criar classes observáveis, sempre retorne o proxy do constructor:
+Todas são **funções factory** que retornam classes abstratas (não são classes diretamente):
+```typescript
+class MeuComp extends ReactUIClient() { ... }
+class MeuComp extends ReactUIClient(MinhaClasseBase) { ... }  // herança customizada
+```
 
-   ```typescript
-   constructor() {
-     const proxy = proxyHandler(this, {...});
-     return proxy;
-   }
-   ```
+### Proxy Reativo em `ReactUI`
 
-2. **Rebind Automático:** Métodos passados como callbacks (ex: `onSubmit`) são automaticamente rebinded via ProxyHandler - não use `.bind(this)` manual
+O construtor cria um `proxyHandler` na instância com:
+- `onChanges` disparado em qualquer mudança em `this.*`
+- `onPropsChange` disparado em mudanças em `this.props.*`
+- `render` com `.rebind(proxy)` automático
+- Objetos aninhados também são proxificados
 
-3. **TypeScript Avançado:** Este projeto usa tipos complexos (`TConstructor`, `Property<T>`, `TRebindedFunction`) - sempre cheque os tipos em `packages/typescript/src/natives/*/generic/types.ts`
+### `ReactWrapper` — Funcionamento Interno
 
-4. **Server vs Client:** Em Next.js, sempre use `"use client"` em arquivos que usam `ReactUIClient()`
+1. Recebe classe construtora, retorna componente funcional
+2. `ReactUIType === 'client'`: usa `useState` para preservar instância, `useReducer` para forçar re-render via `dispatch`, `useEffect` para `onInit`/`onDestroy`, `useMemo` para atualizar props
+3. `ReactUIType === 'server'`: cria instância e chama `render()` diretamente (sem hooks)
+4. `setupHooks()` é chamado dentro do wrapper funcional → hooks React são válidos aqui
+5. `ReactUIClient.updateView()` chama o `dispatch` injetado pelo wrapper
 
-## Debugging
+### `PropsOf<T>` — Extração de Props
 
-- **"Cannot call hooks outside render"**: Mova hooks para `setupHooks()` na classe
-- **"updateView não definido"**: Componente não montou ainda; chame `updateView()` apenas após mutações durante o ciclo de vida do componente (e apenas em client components)
-- **Mudanças não refletem na UI**: Esqueceu de chamar `this.updateView()` após mutar campos (client components)
-- **Props não atualizam**: Verifique se `onComponentPropsChange()` está sendo usado para sincronizar estado interno quando props externos mudam
-- **Instância resetando inesperadamente**: O wrapper detecta mudanças na classe (via `Object.getPrototypeOf()`) e reseta automaticamente - normal durante hot reload
-
-## Estrutura de Testes
-
-(Atualmente sem testes configurados - use `console.log` e dev server para debug)
-
-## Git Submodules
-
-```bash
-pnpm run git-init  # Inicializa submodules
-pnpm run git-sync  # Sincroniza submodules
+```typescript
+type MyProps = PropsOf<typeof MeuComponente>; // extrai o tipo Props da classe
 ```
 
 ---
 
-**Documentação adicional:**
+## Erros de Build Conhecidos
 
-- `README-ReactWrapper.md` - Guia completo do padrão ReactWrapper
-- `packages/react/README.md` - Detalhes do pacote React
-- `packages/typescript/README.md` - Utilitários TypeScript
+Erros com importações erradas, como importart um arquivo da "dist" em vez da "src", ou importar `types.ts` em vez de `implementations.ts`. Ficar atento para previnir ou corrigir esses erros.
+
+---
+
+## Scripts e Comandos
+
+```bash
+# Na raiz do monorepo
+pnpm build          # build todos os pacotes (ordem correta via Turborepo)
+pnpm dev            # modo watch (todos os pacotes)
+pnpm format         # prettier com tabs em todos os .ts/.tsx/.md
+pnpm new            # turbo gen workspace (gera novo pacote via template)
+pnpm mismatch       # detecta versões de dependências inconsistentes
+pnpm outd           # lista dependências desatualizadas
+pnpm upd            # atualiza dependências interativamente
+pnpm clean          # remove node_modules e pnpm store
+
+# Em pacote específico
+cd packages/typescript && pnpm build   # build do pacote typescript
+cd packages/typescript && pnpm dev     # watch mode
+
+# Script de commit multi-repositório
+./multi-commit.sh   # commita submódulos primeiro, depois o root
+```
+
+---
+
+## Adicionando Novo Módulo Nativo em `packages/typescript`
+
+1. Criar pasta em `src/natives/<tipo>/generic/` (ou `src/natives/<tipo>/`)
+2. Criar `types.ts`, `implementations.ts`, `utils.ts` conforme padrão
+3. Adicionar alias em `tsconfig.json` em `paths`
+4. O `createIndexFile()` adiciona automaticamente ao `src/index.ts` no próximo build
+5. O `packageJsonPlugin()` atualiza automaticamente os `exports` do `package.json`
+
+---
+
+## Git e Submódulos
+
+O projeto usa submodules Git. Para sincronizar:
+```bash
+pnpm git-init   # git submodule update --init --recursive
+pnpm git-sync   # sync remoto de submódulos + pull
+./multi-commit.sh  # commit interativo (submódulos → root)
+```
