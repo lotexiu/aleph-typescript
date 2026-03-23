@@ -83,7 +83,6 @@ export default defineConfig({
 | `indexPlugin(dirs?)` | `./IndexPlugin` | Gera index.js/cjs/d.ts no dist |
 | `copyAllSASSPlugin(srcDir)` | `./CopyAllSASS` | Copia SASS para dist |
 | `excludeSASSPProcessPlugin(srcDir)` | `./ExcludeSASSPProcess` | Marca SASS como external |
-| `preserveKeywordsPlugin()` | `./PreserveKeywords` | Preserva keywords TS nos .d.ts |
 
 ## Regras
 

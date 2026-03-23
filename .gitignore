@@ -27,6 +27,8 @@ out/
 build
 dist
 
+# Commit Ouputs
+.current-monorepo/
 
 # Debug
 npm-debug.log*

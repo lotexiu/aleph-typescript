@@ -136,7 +136,6 @@ rollupOptions: {
 | `indexPlugin()` | Gera `dist/index.js`, `dist/index.cjs`, `dist/index.d.ts` |
 | `copyAllSASSPlugin(srcDir)` | Copia `.scss`/`.sass` para `dist/` sem processar |
 | `excludeSASSPProcessPlugin(srcDir)` | Marca SASS como external no Rollup |
-| `preserveKeywordsPlugin()` | Preserva keywords TypeScript (`abstract`, `readonly`, etc.) nos `.d.ts` |
 
 ### Outputs do Build
 

@@ -40,7 +40,6 @@ build: {
 - `betterOutDirCleanPlugin()` — remove `.js`/`.cjs` órfãos; NÃO usa `emptyOutDir`
 - `packageJsonPlugin(['dist', './'])` — gera `exports` no `package.json` automaticamente dos arquivos em `dist/`; NUNCA editar manualmente os exports
 - `createIndexFile(libSrc)` — gera `src/index.ts` barrel; executar antes do build
-- `preserveKeywordsPlugin()` — preserva keywords TS nos `.d.ts` gerados
 - `copyAllSASSPlugin(srcDir)` — copia SASS para dist sem processar
 - `excludeSASSPProcessPlugin(srcDir)` — marca SASS como external no Rollup
 

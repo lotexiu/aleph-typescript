@@ -22,7 +22,6 @@ src/
     ExcludeSASSPProcess.ts → excludeSASSPProcessPlugin()
     IndexPlugin.ts         → indexPlugin() e createIndexFile()
     PackageJsonPlugin.ts   → packageJsonPlugin()
-    PreserveKeywords.ts    → preserveKeywordsPlugin()
 ```
 
 ## Plugins — Contratos
@@ -60,9 +59,6 @@ src/
 - Marca arquivos SASS como `external` no Rollup (não processa)
 - Em `writeBundle`, copia os arquivos SASS manualmente
 
-### `preserveKeywordsPlugin()`
-- Usa a API do TypeScript (`ts.SourceFile`) para extrair keywords dos arquivos `.ts`
-- Reaplica `abstract`, `readonly`, `private`, `protected`, `static` nos `.d.ts` gerados
 
 ## Funções em `utils.ts`
 
