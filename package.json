@@ -10,7 +10,7 @@
     "outd": "pnpm outdated -r",
     "upd": "pnpm up -r -i",
 		"upd-l": "pnpm up -r -L",
-		"start": "pnpm git-sync && pnpm i && pnpm approve-builds",
+		"start": "pnpm git-sync && pnpm i",
 		"git-init": "git submodule update --init --recursive",
 		"git-sub-branch": "git submodule foreach 'branch=$(git symbolic-ref --short -q refs/remotes/origin/HEAD); git checkout ${branch#origin/} || git checkout main'",
 		"git-sub-update": "git submodule update --remote --recursive",
