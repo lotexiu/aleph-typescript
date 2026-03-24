@@ -1,4 +1,14 @@
-import { FILTER, FORCE, SKIP_CURRENT_SETUP, SKIP_REF, VERBOSE, ROOT, REF_DIR, colors as c } from './config.mjs';
+import {
+	FILTER,
+	FORCE,
+	SKIP_CURRENT_SETUP,
+	SKIP_REF,
+	VERBOSE,
+	ROOT,
+	REF_DIR,
+	WARNINGS_JSON_ONLY,
+	colors as c,
+} from './config.mjs';
 import { log } from './logger.mjs';
 import { checkRequiredTools } from './services/tools.service.mjs';
 import { getSubmodules } from './services/git.service.mjs';
@@ -12,7 +22,7 @@ export const run = async () => {
 	console.log(`\n${c.bold}${c.white}=== pnpm get-changes ===${c.reset}`);
 	console.log(`${c.gray}  Root: ${ROOT}${c.reset}`);
 	console.log(`${c.gray}  Ref: ${REF_DIR}${c.reset}`);
-	console.log(`${c.gray}  Mode: ${VERBOSE ? 'verbose' : 'normal'}${FORCE ? ' +force' : ''}${SKIP_REF ? ' +skip-ref' : ''}${SKIP_CURRENT_SETUP ? ' +skip-current-setup' : ''}${FILTER ? ` filter=${FILTER}` : ''}${c.reset}\n`);
+	console.log(`${c.gray}  Mode: ${VERBOSE ? 'verbose' : 'normal'}${FORCE ? ' +force' : ''}${SKIP_REF ? ' +skip-ref' : ''}${SKIP_CURRENT_SETUP ? ' +skip-current-setup' : ''}${WARNINGS_JSON_ONLY ? ' +warnings-json-only' : ''}${FILTER ? ` filter=${FILTER}` : ''}${c.reset}\n`);
 
 	const submodules = getSubmodules();
 	if (submodules.length === 0) {
@@ -34,30 +44,37 @@ export const run = async () => {
 	log.info(`Packages to check: ${filtered.map((s) => s.shortName).join(', ')}`);
 
 	setupCurrentMonorepo(log);
-	if (!SKIP_REF) setupReference(log);
-	else log.warn('Skipping reference update/build (--skip-ref)');
+	if (!SKIP_REF && !WARNINGS_JSON_ONLY) setupReference(log);
+	else if (!WARNINGS_JSON_ONLY) log.warn('Skipping reference update/build (--skip-ref)');
+	else log.warn('Skipping reference update/build in warnings-json-only mode');
 
 	const results = [];
 	for (const submodule of filtered) {
 		if (!exists(`${submodule.absPath}/package.json`)) continue;
-		const result = await analyzePackage(submodule);
+		const result = await analyzePackage(submodule, { warningsOnly: WARNINGS_JSON_ONLY });
 		if (result) results.push(result);
 	}
 
 	console.log(`\n${c.bold}${c.white}=== Summary ===${c.reset}`);
 	if (results.length === 0) {
-		log.info('No changed package detected');
+		log.info(WARNINGS_JSON_ONLY ? 'No package analyzed' : 'No changed package detected');
 	} else {
 		for (const result of results) {
-			const buildOk = result.tags.build === 'build-passed';
+			const buildOk = result.tags.build === 'build-passed' || result.tags.build === 'build-skipped';
+			const warningCount = (result.apiWarnings || []).length;
 			console.log(
 				`  ${buildOk ? c.green + 'OK' : c.red + 'ERR'}${c.reset} ${c.bold}${result.package}${c.reset} ` +
 				`impact=${c.cyan}${result.tags.impact}${c.reset} ` +
 				`type=${c.cyan}${result.tags.type}${c.reset} ` +
-				`build=${buildOk ? c.green : c.red}${result.tags.build}${c.reset}`
+				`build=${buildOk ? c.green : c.red}${result.tags.build}${c.reset} ` +
+				`apiWarnings=${warningCount}`
 			);
 			result.issues.forEach((issue) => console.log(`       ${c.yellow}WARN${c.reset} ${issue}`));
 		}
+	}
+
+	if (WARNINGS_JSON_ONLY) {
+		process.exit(0);
 	}
 
 	process.exit(results.some((r) => r.tags.build === 'build-failed') ? 1 : 0);

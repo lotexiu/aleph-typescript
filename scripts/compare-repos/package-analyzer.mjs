@@ -1,5 +1,5 @@
 import path from 'path';
-import { REF_DIR, SKIP_BUILD, ROOT, VERBOSE } from './config.mjs';
+import { REF_DIR, SKIP_BUILD, ROOT, VERBOSE, IGNORED_WARNING_PATTERNS } from './config.mjs';
 import { log } from './logger.mjs';
 import { readJSON, writeFile, writeJSON, cleanupApiArtifacts } from './core/fs-utils.mjs';
 import { getDefaultBranch, getCurrentBranch, getChangedFiles, toWebRepoUrl, collectCodeChanges, compareDist, compareSingleFile, getCommitEntries } from './services/git.service.mjs';
@@ -13,7 +13,64 @@ import { genChangelogMd } from './generators/changelog.generator.mjs';
 import { genTagNotesMd } from './generators/tag-notes.generator.mjs';
 import { execSafe } from './core/command.mjs';
 
-export const analyzePackage = async (submodule) => {
+const normalizePath = (value) => String(value || '').replace(/\\/g, '/');
+
+const warningText = (warning) => `${warning?.raw || ''} ${warning?.code || ''} ${warning?.message || ''}`.toLowerCase();
+
+const splitWarnings = (warnings = []) => {
+	const visible = [];
+	const ignored = [];
+
+	for (const warning of warnings) {
+		const isIgnored = IGNORED_WARNING_PATTERNS.some((pattern) => warningText(warning).includes(String(pattern).toLowerCase()));
+		if (isIgnored) ignored.push(warning);
+		else visible.push(warning);
+	}
+
+	return { visible, ignored };
+};
+
+const toRepoRelativePath = (pkgPath, warningFilePath) => {
+	if (!warningFilePath) return null;
+	const normalizedPkgPath = normalizePath(pkgPath);
+	const normalizedWarningPath = normalizePath(warningFilePath);
+	if (normalizedWarningPath.startsWith(`${normalizedPkgPath}/`)) {
+		return normalizedWarningPath.slice(normalizedPkgPath.length + 1);
+	}
+	return normalizedWarningPath;
+};
+
+const filterWarningsByChangedFiles = (warnings = [], changedFiles = [], pkgPath) => {
+	const changedSet = new Set(changedFiles.map((file) => normalizePath(file)));
+	return warnings.filter((warning) => {
+		const relative = toRepoRelativePath(pkgPath, warning.file);
+		if (!relative) return false;
+		return changedSet.has(normalizePath(relative));
+	});
+};
+
+const writeProjectWarningsReport = ({ submodule, branch, issues = [], allWarnings = [] }) => {
+	const { visible, ignored } = splitWarnings(allWarnings);
+	const payload = {
+		package: submodule.shortName,
+		baseBranch: branch,
+		generatedAt: new Date().toISOString(),
+		ignoredWarningPatterns: IGNORED_WARNING_PATTERNS,
+		projectIssues: issues,
+		apiWarnings: {
+			visible,
+			ignored,
+			total: allWarnings.length,
+		},
+	};
+
+	const reportPath = path.join(submodule.absPath, '.changes', 'PROJECT_WARNINGS.json');
+	writeJSON(reportPath, payload);
+	log.info(`Written: ${path.relative(ROOT, reportPath)}`);
+};
+
+export const analyzePackage = async (submodule, options = {}) => {
+	const warningsOnly = options.warningsOnly === true;
 	log.step(`Analyzing ${submodule.shortName}`);
 	const branch = getDefaultBranch(submodule.absPath);
 	const currentBranch = getCurrentBranch(submodule.absPath);
@@ -22,13 +79,15 @@ export const analyzePackage = async (submodule) => {
 	const repoWebUrl = toWebRepoUrl(repoUrl);
 
 	const changedFiles = getChangedFiles(submodule.absPath, branch);
-	if (changedFiles.length === 0) {
+	if (changedFiles.length === 0 && !warningsOnly) {
 		log.info('No relevant changes outside .changes/ - skipping');
 		return null;
 	}
 
-	log.info(`${changedFiles.length} changed file(s)`);
-	changedFiles.forEach((file) => log.debug(file));
+	if (!warningsOnly) {
+		log.info(`${changedFiles.length} changed file(s)`);
+		changedFiles.forEach((file) => log.debug(file));
+	}
 
 	const buildResult = SKIP_BUILD ? { passed: true, skipped: true } : buildPackage(submodule);
 	const buildTag = buildResult.passed ? 'build-passed' : 'build-failed';
@@ -38,14 +97,36 @@ export const analyzePackage = async (submodule) => {
 	const currentPackageJson = readJSON(path.join(submodule.absPath, 'package.json'));
 	const currentVersion = currentPackageJson?.version || '0.0.0';
 
-	const codeChanges = collectCodeChanges(submodule.absPath, branch, changedFiles);
-	const distChanges = compareDist(path.join(refPackageDir, 'dist'), path.join(submodule.absPath, 'dist'));
-	const packageDiff = compareSingleFile(refPackageDir, submodule.absPath, 'package.json');
-	const readmeDiff = compareSingleFile(refPackageDir, submodule.absPath, 'README.md');
-	const api = runLevitate(refPackageDir, submodule.absPath, log);
+	const codeChanges = warningsOnly ? [] : collectCodeChanges(submodule.absPath, branch, changedFiles);
+	const distChanges = warningsOnly ? [] : compareDist(path.join(refPackageDir, 'dist'), path.join(submodule.absPath, 'dist'));
+	const packageDiff = warningsOnly ? { changed: false } : compareSingleFile(refPackageDir, submodule.absPath, 'package.json');
+	const readmeDiff = warningsOnly ? { changed: false } : compareSingleFile(refPackageDir, submodule.absPath, 'README.md');
+	const api = warningsOnly ? null : runLevitate(refPackageDir, submodule.absPath, log);
 	const apiExtractorCurrent = runApiExtractor(submodule.absPath, 'current', VERBOSE);
-	const apiExtractorReference = runApiExtractor(refPackageDir, 'reference', VERBOSE);
-	const apiExtractorDiff = compareApiExtractorReports(apiExtractorReference, apiExtractorCurrent);
+	const apiExtractorReference = warningsOnly ? null : runApiExtractor(refPackageDir, 'reference', VERBOSE);
+	const apiExtractorDiff = warningsOnly ? null : compareApiExtractorReports(apiExtractorReference, apiExtractorCurrent);
+
+	if (warningsOnly) {
+		writeProjectWarningsReport({
+			submodule,
+			branch,
+			issues: [],
+			allWarnings: apiExtractorCurrent?.warnings || [],
+		});
+
+		return {
+			package: submodule.shortName,
+			timestamp: new Date().toISOString(),
+			baseBranch: branch,
+			tags: {
+				impact: 'none',
+				type: 'warnings',
+				build: buildTag,
+			},
+			issues: [],
+			apiWarnings: [],
+		};
+	}
 
 	const commits = getCommitEntries(submodule.absPath, branch, repoWebUrl);
 	const repoSlug = repoWebUrl ? repoWebUrl.replace('https://github.com/', '') : null;
@@ -83,6 +164,16 @@ export const analyzePackage = async (submodule) => {
 		apiExtractorCurrent,
 	});
 
+	const allApiWarnings = apiExtractorCurrent?.warnings || [];
+	const relatedApiWarnings = splitWarnings(filterWarningsByChangedFiles(allApiWarnings, changedFiles, submodule.absPath)).visible;
+
+	writeProjectWarningsReport({
+		submodule,
+		branch,
+		issues,
+		allWarnings: allApiWarnings,
+	});
+
 	cleanupApiArtifacts(submodule.absPath, refPackageDir);
 
 	const analysis = buildPrAnalysis({
@@ -105,6 +196,8 @@ export const analyzePackage = async (submodule) => {
 		impact,
 		type,
 	});
+
+	analysis.apiWarnings = relatedApiWarnings;
 
 	const changesDir = path.join(submodule.absPath, '.changes');
 	writeJSON(path.join(changesDir, 'pr-analysis.json'), analysis);

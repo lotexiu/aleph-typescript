@@ -79,5 +79,17 @@ export const genTagNotesMd = (analysis) => {
 		for (const issue of analysis.issues) md += `- ${issue}\n`;
 	}
 
+	md += '\n## API Warnings (Related To Changes)\n\n';
+	const apiWarnings = analysis.apiWarnings || [];
+	if (apiWarnings.length === 0) {
+		md += '- none\n';
+	} else {
+		for (const warning of apiWarnings) {
+			const location = warning?.file ? `${warning.file}${warning?.line ? `:${warning.line}` : ''}` : 'unknown';
+			const code = warning?.code ? ` (${warning.code})` : '';
+			md += `- ${location}${code}: ${warning?.message || warning?.raw || 'warning'}\n`;
+		}
+	}
+
 	return md;
 };

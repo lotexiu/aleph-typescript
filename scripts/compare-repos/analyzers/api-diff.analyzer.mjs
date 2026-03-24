@@ -6,6 +6,89 @@ import { exists } from '../core/fs-utils.mjs';
 import { exec } from '../core/command.mjs';
 import { normalizePatch } from '../core/patch-utils.mjs';
 
+const captureConsoleOutput = (fn) => {
+	const originalStdoutWrite = process.stdout.write.bind(process.stdout);
+	const originalStderrWrite = process.stderr.write.bind(process.stderr);
+	let stdoutBuffer = '';
+	let stderrBuffer = '';
+
+	process.stdout.write = (chunk, encoding, callback) => {
+		const text = typeof chunk === 'string' ? chunk : chunk?.toString(encoding || 'utf-8');
+		stdoutBuffer += text || '';
+		return originalStdoutWrite(chunk, encoding, callback);
+	};
+
+	process.stderr.write = (chunk, encoding, callback) => {
+		const text = typeof chunk === 'string' ? chunk : chunk?.toString(encoding || 'utf-8');
+		stderrBuffer += text || '';
+		return originalStderrWrite(chunk, encoding, callback);
+	};
+
+	try {
+		const result = fn();
+		return {
+			result,
+			output: `${stdoutBuffer}\n${stderrBuffer}`,
+		};
+	} finally {
+		process.stdout.write = originalStdoutWrite;
+		process.stderr.write = originalStderrWrite;
+	}
+};
+
+const parseApiWarnings = (rawOutput) => {
+	if (!rawOutput) return [];
+	const warnings = [];
+	const warningLines = rawOutput
+		.split('\n')
+		.map((line) => line.trim())
+		.filter((line) => line.startsWith('Warning: '));
+
+	for (const line of warningLines) {
+		const raw = line.replace(/^Warning:\s*/, '').trim();
+		const detailMatch = raw.match(/^(.*?):(\d+):(\d+)\s-\s\(([^)]+)\)\s(.+)$/);
+		if (detailMatch) {
+			warnings.push({
+				raw,
+				file: detailMatch[1],
+				line: Number(detailMatch[2]),
+				column: Number(detailMatch[3]),
+				code: detailMatch[4],
+				message: detailMatch[5],
+			});
+		} else {
+			warnings.push({ raw, file: null, line: null, column: null, code: null, message: raw });
+		}
+	}
+
+	return warnings;
+};
+
+const normalizeWarningFromCallback = (message) => {
+	const rawText = String(message?.text || '').trim();
+	const raw = rawText.replace(/^Warning:\s*/, '').trim();
+	return {
+		raw,
+		file: message?.sourceFilePath || null,
+		line: Number.isFinite(message?.sourceFileLine) ? Number(message.sourceFileLine) : null,
+		column: Number.isFinite(message?.sourceFileColumn) ? Number(message.sourceFileColumn) : null,
+		code: message?.messageId || null,
+		message: raw || rawText,
+	};
+};
+
+const dedupeWarnings = (warnings) => {
+	const seen = new Set();
+	const result = [];
+	for (const warning of warnings) {
+		const key = `${warning.file || ''}|${warning.line || ''}|${warning.column || ''}|${warning.code || ''}|${warning.message || warning.raw || ''}`;
+		if (seen.has(key)) continue;
+		seen.add(key);
+		result.push(warning);
+	}
+	return result;
+};
+
 export const runLevitate = (refPackageDir, curPackageDir, log) => {
 	const refIndex = [
 		path.join(refPackageDir, 'dist', 'index.d.ts'),
@@ -69,15 +152,25 @@ export const runApiExtractor = (packageDir, label, verbose) => {
 			configObjectFullPath: path.join(outDir, `api-extractor.${label}.json`),
 			packageJsonFullPath: path.join(packageDir, 'package.json'),
 		});
-		const result = Extractor.invoke(config, {
+		const callbackWarnings = [];
+		const captured = captureConsoleOutput(() => Extractor.invoke(config, {
 			localBuild: true,
 			showVerboseMessages: verbose,
-		});
+			messageCallback: (message) => {
+				if (message?.logLevel === 'warning') {
+					callbackWarnings.push(normalizeWarningFromCallback(message));
+				}
+			},
+		}));
+		const result = captured.result;
+		const parsedWarnings = parseApiWarnings(captured.output);
+		const warnings = dedupeWarnings([...callbackWarnings, ...parsedWarnings]);
 		const reportPath = path.join(outDir, reportFileName);
 		return {
 			succeeded: result.succeeded,
 			errorCount: result.errorCount,
 			warningCount: result.warningCount,
+			warnings,
 			reportPath: exists(reportPath) ? reportPath : null,
 		};
 	} catch (e) {
@@ -85,6 +178,7 @@ export const runApiExtractor = (packageDir, label, verbose) => {
 			succeeded: false,
 			errorCount: 1,
 			warningCount: 0,
+			warnings: [],
 			reportPath: null,
 			error: e.message,
 		};
