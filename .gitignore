@@ -29,6 +29,7 @@ dist
 
 # Commit Ouputs
 .current-monorepo/
+.changes/
 
 # Debug
 npm-debug.log*

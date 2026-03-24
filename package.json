@@ -11,6 +11,7 @@
     "upd": "pnpm up -r -i",
 		"upd-l": "pnpm up -r -L",
 		"start": "pnpm git-sync && pnpm i",
+		"get-changes": "node scripts/compare-repos.mjs",
 		"git-init": "git submodule update --init --recursive",
 		"git-sub-branch": "git submodule foreach 'branch=$(git symbolic-ref --short -q refs/remotes/origin/HEAD); git checkout ${branch#origin/} || git checkout main'",
 		"git-sub-update": "git submodule update --remote --recursive",
@@ -18,6 +19,8 @@
 		"clean": "find . -name \"node_modules\" -type d -prune -exec rm -rf '{}' + && pnpm store prune"
   },
   "devDependencies": {
+    "@grafana/levitate": "^0.17.2",
+    "@microsoft/api-extractor": "^7.57.7",
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^22.19.1",
     "@vitejs/plugin-react": "^5.1.1",
