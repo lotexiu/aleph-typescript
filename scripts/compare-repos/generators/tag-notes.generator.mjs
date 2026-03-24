@@ -23,6 +23,9 @@ const cleanCommitMessage = (message) => {
 		.trim();
 };
 
+const badgeValue = (value) => encodeURIComponent(String(value).replace(/-/g, '--').replace(/\s+/g, '_'));
+const badge = (label, value, color) => `![](https://img.shields.io/badge/${badgeValue(label)}-${badgeValue(value)}-${badgeValue(color)}?style=for-the-badge&logo=github)<br>`;
+
 export const genTagNotesMd = (analysis) => {
 	const release = analysis.release;
 	const now = new Date(analysis.timestamp).toLocaleString('pt-BR');
@@ -32,24 +35,36 @@ export const genTagNotesMd = (analysis) => {
 
 	let md = `# Tag Notes - v${release.nextVersion}\n\n`;
 	md += `Generated: ${now}\n\n`;
+	const impact = analysis.tags?.impact || release.impact;
+	const type = analysis.tags?.type || 'unknown';
+	const build = analysis.tags?.build || release.build;
+	const impactColor = impact === 'major' ? 'orange' : impact === 'minor' ? 'blue' : 'lightgrey';
+	const typeColor = type === 'feature' ? 'brightgreen' : type === 'fix' ? 'yellow' : type === 'refactor' ? 'blueviolet' : type === 'docs' ? 'informational' : 'lightgrey';
+	const buildColor = build === 'build-passed' ? 'brightgreen' : 'red';
+
 	md += '## Release Signals\n\n';
-	md += `- Impact: ${analysis.tags?.impact || release.impact}\n`;
-	md += `- Type: ${analysis.tags?.type || 'unknown'}\n`;
-	md += `- Build: ${analysis.tags?.build || release.build}\n`;
-	md += `- PRs included: ${prCount}\n`;
-	md += `- Commits included: ${commitCount}\n\n`;
+	md += `${badge('impact', impact, impactColor)}\n`;
+	md += `${badge('type', type, typeColor)}\n`;
+	md += `${badge('build', build, buildColor)}\n`;
+	md += `${badge('prs', prCount, 'blue')}\n`;
+	md += `${badge('commits', commitCount, 'blue')}\n\n`;
 
 	md += '## PR Digest\n\n';
 	if (section.length === 0) {
 		md += '- No PR entries found for this release impact.\n\n';
 	} else {
 		for (const item of section) {
-			md += `### PR #${item.pr.number} - ${item.pr.title}\n`;
-			md += `- URL: ${item.pr.url || '#'}\n`;
-			md += `- PR date: ${formatDatePT(item.pr.createdAt)}\n`;
-			md += `- PR owner: ${item.pr.owner || 'unknown'}\n`;
-			md += `- Reviewers: ${toMentions(item.pr.reviewers)}\n`;
-			md += `- Approvers: ${toMentions(item.pr.approvers)}\n`;
+			if (item.pr.isDirect) {
+				md += `### Direct Commits - ${item.pr.title}\n`;
+				md += `- URL: ${item.pr.url || '#'}\n`;
+			} else {
+				md += `### PR #${item.pr.number} - ${item.pr.title}\n`;
+				md += `- URL: ${item.pr.url || '#'}\n`;
+				md += `- PR date: ${formatDatePT(item.pr.createdAt)}\n`;
+				md += `- PR owner: ${item.pr.owner || 'unknown'}\n`;
+				md += `- Reviewers: ${toMentions(item.pr.reviewers)}\n`;
+				md += `- Approvers: ${toMentions(item.pr.approvers)}\n`;
+			}
 			for (const commit of item.commits || []) {
 				md += `- Commit ${commit.shortSha}: ${cleanCommitMessage(commit.message)} (owner: ${commit.author || 'unknown'})\n`;
 			}

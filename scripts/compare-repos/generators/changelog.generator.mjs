@@ -32,13 +32,17 @@ const formatSection = (name, items, analysis) => {
 	for (let i = 0; i < items.length; i++) {
 		const item = items[i];
 		const isLast = i === items.length - 1;
-		const prNum = item.pr.number || 'local';
 		const prUrl = item.pr.url || '#';
-		out += `- [[PR ${prNum}](${prUrl})]: ${item.pr.title}\n`;
-		out += `\t- PR date: ${formatDatePT(item.pr.createdAt)}\n`;
-		out += `\t- PR owner: ${item.pr.owner || 'unknown'}\n`;
-		out += `\t- Reviewers: ${toMentions(item.pr.reviewers)}\n`;
-		out += `\t- Approvers: ${toMentions(item.pr.approvers)}\n`;
+		if (item.pr.isDirect) {
+			out += `- ${item.pr.title}\n`;
+		} else {
+			const prNum = item.pr.number || 'local';
+			out += `- [[PR ${prNum}](${prUrl})]: ${item.pr.title}\n`;
+			out += `\t- PR date: ${formatDatePT(item.pr.createdAt)}\n`;
+			out += `\t- PR owner: ${item.pr.owner || 'unknown'}\n`;
+			out += `\t- Reviewers: ${toMentions(item.pr.reviewers)}\n`;
+			out += `\t- Approvers: ${toMentions(item.pr.approvers)}\n`;
+		}
 
 		for (const commit of item.commits) {
 			const commitUrl = commit.url || '#';

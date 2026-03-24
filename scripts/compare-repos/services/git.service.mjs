@@ -46,6 +46,11 @@ export const getDefaultBranch = (repoPath) => {
 	return 'master';
 };
 
+export const getCurrentBranch = (repoPath) => {
+	const branch = execSafe('git rev-parse --abbrev-ref HEAD', { cwd: repoPath, silent: true });
+	return branch || 'HEAD';
+};
+
 export const getChangedFiles = (pkgPath, branch) => {
 	execSafe('git fetch --quiet origin', { cwd: pkgPath });
 	const diff = execSafe(`git diff origin/${branch}...HEAD --name-only --diff-filter=ACMRD`, { cwd: pkgPath });

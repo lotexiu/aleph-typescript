@@ -2,7 +2,7 @@ import path from 'path';
 import { REF_DIR, SKIP_BUILD, ROOT, VERBOSE } from './config.mjs';
 import { log } from './logger.mjs';
 import { readJSON, writeFile, writeJSON, cleanupApiArtifacts } from './core/fs-utils.mjs';
-import { getDefaultBranch, getChangedFiles, toWebRepoUrl, collectCodeChanges, compareDist, compareSingleFile, getCommitEntries } from './services/git.service.mjs';
+import { getDefaultBranch, getCurrentBranch, getChangedFiles, toWebRepoUrl, collectCodeChanges, compareDist, compareSingleFile, getCommitEntries } from './services/git.service.mjs';
 import { getOpenIssues, getPRData } from './services/github.service.mjs';
 import { buildPackage } from './setup/build-setup.mjs';
 import { runLevitate, runApiExtractor, compareApiExtractorReports, detectImpact, detectType, bumpVersion } from './analyzers/api-diff.analyzer.mjs';
@@ -16,6 +16,8 @@ import { execSafe } from './core/command.mjs';
 export const analyzePackage = async (submodule) => {
 	log.step(`Analyzing ${submodule.shortName}`);
 	const branch = getDefaultBranch(submodule.absPath);
+	const currentBranch = getCurrentBranch(submodule.absPath);
+	const isPrincipalBranch = currentBranch === branch;
 	const repoUrl = execSafe('git remote get-url origin', { cwd: submodule.absPath });
 	const repoWebUrl = toWebRepoUrl(repoUrl);
 
@@ -59,6 +61,8 @@ export const analyzePackage = async (submodule) => {
 
 	const release = buildReleaseEntries({
 		branch,
+		currentBranch,
+		isPrincipalBranch,
 		repoWebUrl,
 		impact,
 		commits,

@@ -1,6 +1,19 @@
 import { getPerPRCodeChanges } from './git.service.mjs';
 
-export const buildReleaseEntries = ({ branch, repoWebUrl, impact, commits, buildTag, nextVersion, currentVersion, prCommitMap, prMaxNumber, pkgPath }) => {
+export const buildReleaseEntries = ({
+	branch,
+	currentBranch,
+	isPrincipalBranch,
+	repoWebUrl,
+	impact,
+	commits,
+	buildTag,
+	nextVersion,
+	currentVersion,
+	prCommitMap,
+	prMaxNumber,
+	pkgPath,
+}) => {
 	const prGroups = {};
 	const unassigned = [];
 
@@ -25,23 +38,42 @@ export const buildReleaseEntries = ({ branch, repoWebUrl, impact, commits, build
 	}
 
 	if (unassigned.length > 0) {
-		const maxKnown = sortedPRNums.length > 0 ? Math.max(...sortedPRNums) : 0;
-		const nextPrNumber = Math.max(maxKnown, prMaxNumber || 0) + 1;
 		const codeChanges = pkgPath ? getPerPRCodeChanges(pkgPath, unassigned) : [];
-		changelog[impact].push({
-			pr: {
-				number: nextPrNumber,
-				url: repoWebUrl ? `${repoWebUrl}/pull/${nextPrNumber}` : '#',
-				title: `Changes from current branch (${branch})`,
-				owner: 'local',
-				createdAt: null,
-				mergedAt: null,
-				reviewers: [],
-				approvers: [],
-			},
-			commits: unassigned,
-			codeChanges,
-		});
+
+		if (isPrincipalBranch) {
+			changelog[impact].push({
+				pr: {
+					number: null,
+					url: repoWebUrl ? `${repoWebUrl}/commits/${currentBranch || branch}` : '#',
+					title: `Direct commits on ${currentBranch || branch} (no PR)`,
+					owner: 'local',
+					createdAt: null,
+					mergedAt: null,
+					reviewers: [],
+					approvers: [],
+					isDirect: true,
+				},
+				commits: unassigned,
+				codeChanges,
+			});
+		} else {
+			const maxKnown = sortedPRNums.length > 0 ? Math.max(...sortedPRNums) : 0;
+			const nextPrNumber = Math.max(maxKnown, prMaxNumber || 0) + 1;
+			changelog[impact].push({
+				pr: {
+					number: nextPrNumber,
+					url: repoWebUrl ? `${repoWebUrl}/pull/${nextPrNumber}` : '#',
+					title: `Changes from current branch (${currentBranch || branch})`,
+					owner: 'local',
+					createdAt: null,
+					mergedAt: null,
+					reviewers: [],
+					approvers: [],
+				},
+				commits: unassigned,
+				codeChanges,
+			});
+		}
 	}
 
 	return { currentVersion, nextVersion, build: buildTag, impact, changelog };
