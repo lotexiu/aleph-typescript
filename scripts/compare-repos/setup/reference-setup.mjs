@@ -12,14 +12,16 @@ export const setupReference = (log) => {
 		exec(`git clone "${REPO_URL}" "${REF_DIR}"`, { stdio: VERBOSE ? 'inherit' : 'pipe' });
 	} else {
 		log.info('Updating reference clone...');
-		exec('git fetch --quiet origin', { cwd: REF_DIR });
 		const branch = getDefaultBranch(REF_DIR);
+		exec(`git fetch --quiet origin`, { cwd: REF_DIR });
 		exec(`git reset --hard origin/${branch}`, { cwd: REF_DIR });
 		exec('git clean -fd -q', { cwd: REF_DIR });
 	}
 
-	log.info('Preparing reference submodules...');
-	exec('git submodule update --init --recursive', { cwd: REF_DIR, stdio: VERBOSE ? 'inherit' : 'pipe' });
+	log.info('Syncing submodules (init + branch checkout + update)...');
+	exec('pnpm git-init', { cwd: REF_DIR, stdio: VERBOSE ? 'inherit' : 'pipe' });
+	exec('pnpm git-sub-branch', { cwd: REF_DIR, stdio: VERBOSE ? 'inherit' : 'pipe' });
+	exec('pnpm git-sub-update', { cwd: REF_DIR, stdio: VERBOSE ? 'inherit' : 'pipe' });
 	log.info('Installing deps in reference...');
 	exec('pnpm install --no-frozen-lockfile', { cwd: REF_DIR, stdio: VERBOSE ? 'inherit' : 'pipe' });
 	log.info('Building reference monorepo...');
