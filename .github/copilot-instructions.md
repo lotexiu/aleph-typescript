@@ -69,7 +69,7 @@ modulo/
 
 - `implementations.ts` exporta objeto: `export const _Object = { isEmptyObj, circularReferenceHandler, ... }`
 - `utils.ts` exporta classe estática: `export class ObjectUtils { static isEmptyObj = _Object.isEmptyObj; ... }`
-- Arquivos `types.ts` geram **empty chunks** no build (0.00 kB) — comportamento esperado e correto
+- Arquivos `types.ts` são módulos type-only; a descoberta de entries atual deve ignorá-los quando não houver runtime
 
 ### Aliases de Path (tsconfig.json de cada pacote)
 
@@ -131,8 +131,8 @@ rollupOptions: {
 | Plugin | Função |
 |---|---|
 | `betterOutDirCleanPlugin()` | Remove arquivos `.js`/`.cjs` órfãos do build anterior (não remove novos) |
-| `packageJsonPlugin(['dist', './'])` | Auto-gera as `exports` em `package.json` a partir dos arquivos em `dist/` |
-| `createIndexFile(libSrc)` | Gera `src/index.ts` com `export * from` para todos os arquivos `.ts` da `src/` |
+| `packageJsonPlugin(['dist', './'], { generateExports: false })` | Atualiza metadados básicos de `package.json` sem gerar `exports` |
+| `createIndexFile(libSrc, options?)` | Gera `src/index.ts` com exports explícitos de runtime por arquivo, importa módulos `@required` sem export e ignora ocultos, diretórios configurados e símbolos `@internal` |
 | `indexPlugin()` | Gera `dist/index.js`, `dist/index.cjs`, `dist/index.d.ts` |
 | `copyAllSASSPlugin(srcDir)` | Copia `.scss`/`.sass` para `dist/` sem processar |
 | `excludeSASSPProcessPlugin(srcDir)` | Marca SASS como external no Rollup |
@@ -160,7 +160,7 @@ dist/
 
 ### Exportações do package.json
 
-O `packageJsonPlugin` auto-gera as `exports` no `package.json` baseado nos arquivos em `dist/`. Não editá-las manualmente — são sobrescritas no build.
+As bibliotecas devem usar `packageJsonPlugin` com `generateExports: false` e remover `exports` caso exista.
 
 ---
 

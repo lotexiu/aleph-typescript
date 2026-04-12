@@ -34,7 +34,7 @@ export default defineConfig({
   plugins: [
     dts({ include: ["src"], outDir: "dist", insertTypesEntry: false }),
     betterOutDirCleanPlugin(),         // limpa órfãos — NÃO usar emptyOutDir: true
-    packageJsonPlugin(['dist', './']), // gera exports no package.json automaticamente
+    packageJsonPlugin(["dist", "./"], { generateExports: false }),
   ],
   build: {
     minify: false,      // OBRIGATÓRIO — HMR e legibilidade
@@ -78,8 +78,8 @@ export default defineConfig({
 | Plugin | Import | Uso |
 |---|---|---|
 | `betterOutDirCleanPlugin()` | `./BetterOutDirClean` | Remove `.js`/`.cjs` órfãos do dist |
-| `packageJsonPlugin(dirs)` | `./PackageJsonPlugin` | Auto-gera exports no package.json |
-| `createIndexFile(srcDir)` | `./IndexPlugin` | Gera barrel index.ts |
+| `packageJsonPlugin(dirs, options?)` | `./PackageJsonPlugin` | Atualiza package.json sem gerar exports quando `generateExports: false` |
+| `createIndexFile(srcDir, options?)` | `./IndexPlugin` | Gera barrel index.ts |
 | `indexPlugin(dirs?)` | `./IndexPlugin` | Gera index.js/cjs/d.ts no dist |
 | `copyAllSASSPlugin(srcDir)` | `./CopyAllSASS` | Copia SASS para dist |
 | `excludeSASSPProcessPlugin(srcDir)` | `./ExcludeSASSPProcess` | Marca SASS como external |
@@ -89,6 +89,6 @@ export default defineConfig({
 - `minify: false` — nunca usar `true` (quebra HMR)
 - `emptyOutDir: false` — nunca usar `true` (usa `betterOutDirCleanPlugin`)
 - `preserveModules: true` — sempre (espelha estrutura src/ no dist/)
-- `exports` do `package.json` — gerados automaticamente, nunca editar à mão
+- `packageJsonPlugin(..., { generateExports: false })` — obrigatório para não gerar `exports`
 - `src/index.ts` — gerado por `createIndexFile()`, nunca editar à mão
 - `external: externalDependencies()` — lê dependências do package.json raiz, não hardcodar
