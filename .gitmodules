@@ -21,3 +21,7 @@
 [submodule "apps/proton-desk"]
 	path = apps/proton-desk
 	url = https://github.com/lotexiu/proton-desk.git
+
+[submodule "apps/express-api"]
+	path = apps/express-api
+	url = https://github.com/lotexiu/express-api.git
