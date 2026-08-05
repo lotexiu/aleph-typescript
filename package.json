@@ -13,7 +13,7 @@
     "outd": "pnpm outdated -r",
     "start": "pnpm git-sync && pnpm i",
     "get-changes": "node scripts/compare-repos.mjs",
-    "git-init": "git submodule update --init --recursive",
+    "git-init": "git submodule update --remote --init --recursive",
     "git-sub-branch": "git submodule foreach 'branch=$(git symbolic-ref --short -q refs/remotes/origin/HEAD); git checkout ${branch#origin/} || git checkout main'",
     "git-sub-update": "git submodule update --remote --recursive",
     "git-sync": "pnpm git-init && pnpm git-sub-branch && pnpm git-sub-update && git pull",
