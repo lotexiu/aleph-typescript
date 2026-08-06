@@ -1,10 +1,18 @@
+[submodule "apps/svelte-desk"]
+	path = apps/svelte-desk
+	url = https://github.com/lotexiu/svelte-desk.git
+
+[submodule "apps/angular-desk"]
+	path = apps/angular-desk
+	url = https://github.com/lotexiu/angular-desk.git
+
+[submodule "apps/react-desk"]
+	path = apps/react-desk
+	url = https://github.com/lotexiu/react-desk.git
+
 [submodule "packages/typescript"]
 	path = packages/typescript
 	url = https://github.com/lotexiu/typescript
-
-[submodule "packages/react"]
-	path = packages/react
-	url = https://github.com/lotexiu/react.git
 
 [submodule "packages/eslint-config"]
 	path = packages/eslint-config
@@ -17,11 +25,3 @@
 [submodule "packages/vite-utils"]
 	path = packages/vite-utils
 	url = https://github.com/lotexiu/vite-utils.git
-
-[submodule "apps/proton-desk"]
-	path = apps/proton-desk
-	url = https://github.com/lotexiu/proton-desk.git
-
-[submodule "apps/express-api"]
-	path = apps/express-api
-	url = https://github.com/lotexiu/express-api.git
